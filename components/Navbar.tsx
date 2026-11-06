@@ -1,78 +1,118 @@
 import React from 'react';
-import { Menu, Bot, Sparkles, Building2 } from 'lucide-react';
-import { ScreenType } from '../types';
+import { Menu, MessageCircleQuestion, UserRound } from 'lucide-react';
+import { ScreenType, Staff } from '../types';
+import { NAV_ITEMS, isNavActive, routeToHash } from './navigation';
 
 interface NavbarProps {
   onOpenDrawer: () => void;
   onOpenAssistant: () => void;
-  onNavigateHome: () => void;
+  onOpenStaffPicker: () => void;
+  onNavigate: (screen: ScreenType) => void;
   currentScreen: ScreenType;
+  activeStaff: Staff | null;
+  badges: Partial<Record<ScreenType, number>>;
 }
 
+/**
+ * Header tetap (sticky). Di layar lebar menu tampil langsung;
+ * di layar lebih kecil menu dipindah ke tombol "Menu".
+ */
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenDrawer,
   onOpenAssistant,
-  onNavigateHome,
+  onOpenStaffPicker,
+  onNavigate,
+  currentScreen,
+  activeStaff,
+  badges,
 }) => {
   return (
-    <header className="sticky top-0 z-40 w-full h-[64px] md:h-[72px] bg-[#1B365D] text-white shadow-md border-b border-[#24426f] px-4 md:px-8 flex items-center justify-between transition-all">
-      {/* LEFT ZONE: Hamburger + Brand Lockup */}
-      <div className="flex items-center gap-3 md:gap-4">
+    <header className="sticky top-0 z-40 w-full bg-navy text-white shadow-md">
+      <div className="max-w-[1536px] mx-auto h-16 px-3 sm:px-6 flex items-center gap-2 sm:gap-4">
         <button
+          type="button"
           onClick={onOpenDrawer}
-          aria-label="Buka menu utama"
-          className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-[#24426f] active:bg-[#2b4c7d] text-white transition-colors cursor-pointer focus-beesha"
+          aria-label="Buka menu"
+          className="2xl:hidden min-h-[48px] min-w-[48px] px-2 sm:px-3 flex items-center justify-center gap-2 rounded-field hover:bg-navy-strong cursor-pointer"
         >
-          <Menu className="w-6 h-6" />
+          <Menu className="w-6 h-6" aria-hidden />
+          <span className="text-base font-semibold hidden sm:inline">Menu</span>
         </button>
 
-        <button
-          onClick={onNavigateHome}
-          className="flex items-center gap-2.5 text-left group cursor-pointer focus-beesha rounded-md"
+        <a
+          href="#/"
+          onClick={(e) => {
+            e.preventDefault();
+            onNavigate('beranda');
+          }}
+          className="flex items-center gap-2.5 rounded-field min-h-[48px] pr-2 shrink-0"
         >
-          <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-[#0077C8] flex items-center justify-center text-white font-bold text-lg shadow-xs group-hover:scale-105 transition-transform">
+          <span className="w-9 h-9 rounded-lg bg-brand flex items-center justify-center font-bold text-lg" aria-hidden>
             B
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-lg md:text-xl tracking-tight text-white leading-none">
-                BEESHA
+          </span>
+          <span className="leading-tight">
+            <span className="block font-bold text-lg tracking-tight">BEESHA</span>
+            <span className="hidden sm:block text-[13px] text-white/80">Operasional PHM</span>
+          </span>
+        </a>
+
+        <nav aria-label="Menu utama" className="hidden 2xl:flex items-center gap-1 ml-2 flex-1 min-w-0">
+          {NAV_ITEMS.map((item) => {
+            const active = isNavActive(item, currentScreen);
+            const badge = badges[item.id];
+            return (
+              <a
+                key={item.id}
+                href={routeToHash({ screen: item.id })}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate(item.id);
+                }}
+                aria-current={active ? 'page' : undefined}
+                className={`min-h-[44px] px-3 inline-flex items-center gap-2 rounded-field text-[15px] font-semibold whitespace-nowrap transition-colors ${
+                  active ? 'bg-white text-navy' : 'text-white/90 hover:bg-navy-strong hover:text-white'
+                }`}
+              >
+                {item.shortLabel ?? item.label}
+                {!!badge && (
+                  <span
+                    className={`min-w-[24px] h-6 px-1.5 rounded-full text-[13px] font-bold inline-flex items-center justify-center ${
+                      active ? 'bg-navy text-white' : 'bg-white text-navy'
+                    }`}
+                  >
+                    {badge}
+                    <span className="sr-only"> perlu ditindaklanjuti</span>
+                  </span>
+                )}
+              </a>
+            );
+          })}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onOpenStaffPicker}
+            className="min-h-[48px] px-2 sm:px-3 flex items-center gap-2 rounded-field border border-white/25 hover:bg-navy-strong cursor-pointer text-left"
+            aria-label={activeStaff ? `Petugas: ${activeStaff.name}. Ganti petugas` : 'Pilih nama petugas'}
+          >
+            <UserRound className="w-5 h-5 shrink-0" aria-hidden />
+            <span className="hidden md:block leading-tight max-w-[160px]">
+              <span className="block text-[13px] text-white/75">Petugas</span>
+              <span className="block text-[15px] font-semibold truncate">
+                {activeStaff ? activeStaff.name : 'Pilih nama'}
               </span>
-              <span className="text-[10px] font-medium bg-[#0077C8]/40 border border-[#0077C8]/60 px-1.5 py-0.2 rounded text-blue-100 hidden sm:inline-block">
-                PHM Group
-              </span>
-            </div>
-            <p className="text-xs text-blue-200/90 font-normal leading-tight mt-0.5 hidden xs:block">
-              Sistem Informasi Operasional
-            </p>
-          </div>
-        </button>
-      </div>
+            </span>
+          </button>
 
-      {/* RIGHT ZONE: Mode Demo + AI Help + User Initials */}
-      <div className="flex items-center gap-2.5 md:gap-3.5">
-        {/* Mode Demo Indicator */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#152a48] border border-[#2d4d7a] text-xs text-blue-200">
-          <span className="w-2 h-2 rounded-full bg-amber-400" />
-          <span>Mode Demo (Simulasi)</span>
-        </div>
-
-        {/* Bantuan Beesha AI Button */}
-        <button
-          onClick={onOpenAssistant}
-          className="h-10 px-3 md:px-3.5 rounded-lg bg-[#0077C8] hover:bg-[#0069b2] active:bg-[#005a99] text-white text-xs md:text-sm font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer focus-beesha"
-        >
-          <Bot className="w-4 h-4 text-blue-100" />
-          <span className="hidden sm:inline">Bantuan Beesha</span>
-          <span className="sm:hidden">Tanya AI</span>
-        </button>
-
-        {/* User Initials Avatar */}
-        <div
-          title="Operator Aktif: Admin Operasional PHM"
-          className="w-10 h-10 rounded-full bg-[#24426f] border border-[#3b5d8f] flex items-center justify-center text-white font-semibold text-xs md:text-sm shadow-xs select-none"
-        >
-          AO
+          <button
+            type="button"
+            onClick={onOpenAssistant}
+            className="hidden sm:flex min-h-[48px] px-3 items-center gap-2 rounded-field bg-brand hover:bg-brand-strong text-[15px] font-semibold cursor-pointer"
+          >
+            <MessageCircleQuestion className="w-5 h-5" aria-hidden />
+            <span>Tanya Beesha</span>
+          </button>
         </div>
       </div>
     </header>

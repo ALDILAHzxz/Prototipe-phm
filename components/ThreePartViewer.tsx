@@ -457,7 +457,7 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
           <h4 className="text-sm font-bold text-[#1E293B] leading-tight truncate">{partName}</h4>
         </div>
         <p className="text-xs text-[#526174] mt-0.5 font-mono">Kode Part: {partCode} · ID: {orderId}</p>
-        <p className="text-[11px] text-[#18794E] font-medium mt-1">✓ Validasi Toleransi Standar PHM Group</p>
+        <p className="text-sm text-[#18794E] font-medium mt-1">✓ Validasi Toleransi Standar PHM Group</p>
       </div>
 
       {/* Top Right Actions */}
@@ -490,7 +490,7 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
         <div className="flex justify-center -mb-px">
           <button
             onClick={() => setIsControlsCollapsed(!isControlsCollapsed)}
-            className="bg-white border-t border-x border-[#D9E0E8] text-[#1E293B] hover:text-[#0077C8] text-[11px] font-semibold px-4 py-1 rounded-t-lg shadow-xs flex items-center gap-1 cursor-pointer"
+            className="bg-white border-t border-x border-[#D9E0E8] text-[#1E293B] hover:text-[#0077C8] text-sm font-semibold px-4 py-1 rounded-t-lg shadow-xs flex items-center gap-1 cursor-pointer"
           >
             {isControlsCollapsed ? '▲ Tampilkan Kontrol Inspeksi' : '▼ Sembunyikan Kontrol'}
           </button>
@@ -527,7 +527,7 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
             <div className="grid grid-cols-4 gap-1">
               <button
                 onClick={() => setFinish('anodized_blue')}
-                className={`py-1 text-[11px] font-medium rounded border transition-colors ${
+                className={`py-1 text-sm font-medium rounded border transition-colors ${
                   finish === 'anodized_blue'
                     ? 'bg-[#0077C8] text-white border-[#0077C8]'
                     : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'
@@ -537,7 +537,7 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
               </button>
               <button
                 onClick={() => setFinish('steel')}
-                className={`py-1 text-[11px] font-medium rounded border transition-colors ${
+                className={`py-1 text-sm font-medium rounded border transition-colors ${
                   finish === 'steel'
                     ? 'bg-[#1B365D] text-white border-[#1B365D]'
                     : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'
@@ -547,7 +547,7 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
               </button>
               <button
                 onClick={() => setFinish('nickel')}
-                className={`py-1 text-[11px] font-medium rounded border transition-colors ${
+                className={`py-1 text-sm font-medium rounded border transition-colors ${
                   finish === 'nickel'
                     ? 'bg-slate-700 text-white border-slate-700'
                     : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'
@@ -557,7 +557,7 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
               </button>
               <button
                 onClick={() => setFinish('matte_black')}
-                className={`py-1 text-[11px] font-medium rounded border transition-colors ${
+                className={`py-1 text-sm font-medium rounded border transition-colors ${
                   finish === 'matte_black'
                     ? 'bg-black text-white border-black'
                     : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'

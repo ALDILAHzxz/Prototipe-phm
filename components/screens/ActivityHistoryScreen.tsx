@@ -1,150 +1,150 @@
-import React, { useState } from 'react';
-import { History, ClipboardPlus, Factory, Truck, Search, Eye } from 'lucide-react';
-import { ActivityRecord, ActivityType, Order, Partner } from '../../types';
+import React, { useMemo, useState } from 'react';
+import { Search, ClipboardList, Factory, Truck, ShieldCheck, History } from 'lucide-react';
+import { ActivityType } from '../../types';
+import { DerivedActivity } from '../../lib/activity';
+import { formatDate, formatDateTime } from '../../lib/format';
+import { PageHeader, Card, EmptyState, FilterChips } from '../ui/Layout';
+import { Button } from '../ui/Button';
+import { inputClass } from '../ui/Field';
 
 interface ActivityHistoryScreenProps {
-  activities: ActivityRecord[];
-  orders: Order[];
-  partners: Partner[];
+  activities: DerivedActivity[];
   onSelectOrder: (orderId: string) => void;
 }
 
-export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({
-  activities,
-  orders,
-  partners,
-  onSelectOrder,
-}) => {
-  const [filterType, setFilterType] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+type Filter = ActivityType | 'semua';
 
-  const filtered = activities.filter((act) => {
-    const matchesType = filterType === 'all' || act.activity_type === filterType;
-    const q = searchQuery.toLowerCase().trim();
-    const matchesSearch =
-      q === '' ||
-      act.description.toLowerCase().includes(q) ||
-      act.related_order_id.toLowerCase().includes(q) ||
-      act.recorded_by.toLowerCase().includes(q);
+const ICON: Record<ActivityType, React.ReactNode> = {
+  pesanan: <ClipboardList className="w-5 h-5" aria-hidden />,
+  produksi: <Factory className="w-5 h-5" aria-hidden />,
+  pengiriman: <Truck className="w-5 h-5" aria-hidden />,
+  pemeriksaan: <ShieldCheck className="w-5 h-5" aria-hidden />,
+};
 
-    return matchesType && matchesSearch;
-  });
+const TYPE_LABEL: Record<ActivityType, string> = {
+  pesanan: 'Pesanan',
+  produksi: 'Produksi',
+  pengiriman: 'Pengiriman',
+  pemeriksaan: 'Pemeriksaan',
+};
+
+export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ activities, onSelectOrder }) => {
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<Filter>('semua');
+  const [limit, setLimit] = useState(30);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return activities.filter(
+      (a) =>
+        (filter === 'semua' || a.activity_type === filter) &&
+        (!q || [a.description, a.related_order_id, a.recorded_by].some((s) => s.toLowerCase().includes(q)))
+    );
+  }, [activities, filter, query]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { semua: activities.length };
+    activities.forEach((a) => (c[a.activity_type] = (c[a.activity_type] ?? 0) + 1));
+    return c;
+  }, [activities]);
+
+  // kelompokkan per tanggal kejadian
+  const groups = useMemo(() => {
+    const map = new Map<string, DerivedActivity[]>();
+    filtered.slice(0, limit).forEach((a) => {
+      const key = formatDate(a.timestamp);
+      map.set(key, [...(map.get(key) ?? []), a]);
+    });
+    return Array.from(map.entries());
+  }, [filtered, limit]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs">
-        <h1 className="text-2xl md:text-3xl font-bold text-[#1E293B]">Riwayat Aktivitas</h1>
-        <p className="text-sm md:text-base text-[#526174] mt-1">
-          Lihat catatan transaksi pemesanan, hasil produksi, dan pengiriman operasional secara transparan.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Riwayat"
+        description="Semua catatan pesanan, produksi, pengiriman, dan pemeriksaan. Terbaru di atas, disusun dari data asli."
+      />
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white border border-[#D9E0E8] rounded-xl p-4 md:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <Card as="div">
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="w-5 h-5 text-ink-muted absolute left-4 top-1/2 -translate-y-1/2" aria-hidden />
+            <label htmlFor="cari-riwayat" className="sr-only">
+              Cari riwayat
+            </label>
             <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari aktivitas, nomor pesanan, atau petugas..."
-              className="w-full h-[52px] pl-11 pr-4 bg-[#F8FAFC] border border-[#D9E0E8] rounded-lg text-base text-[#1E293B] focus-beesha outline-none"
+              id="cari-riwayat"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari nomor pesanan, nama petugas, atau kata kunci"
+              className={inputClass(false, 'pl-12')}
             />
           </div>
-
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            {[
-              { id: 'all', label: 'Semua Aktivitas' },
-              { id: 'pesanan', label: 'Pemesanan' },
-              { id: 'produksi', label: 'Produksi' },
-              { id: 'pengiriman', label: 'Pengiriman' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFilterType(tab.id)}
-                className={`h-11 px-4 rounded-lg text-xs md:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-                  filterType === tab.id
-                    ? 'bg-[#1B365D] text-white shadow-xs'
-                    : 'bg-[#F2F4F7] text-[#526174] hover:bg-[#e2e7ef]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <FilterChips<Filter>
+            label="Saring jenis catatan"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { id: 'semua', label: 'Semua', count: counts.semua ?? 0 },
+              { id: 'pesanan', label: 'Pesanan', count: counts.pesanan ?? 0 },
+              { id: 'produksi', label: 'Produksi', count: counts.produksi ?? 0 },
+              { id: 'pengiriman', label: 'Pengiriman', count: counts.pengiriman ?? 0 },
+              { id: 'pemeriksaan', label: 'Pemeriksaan', count: counts.pemeriksaan ?? 0 },
+            ]}
+          />
         </div>
+      </Card>
 
-        <div className="text-xs text-[#526174]">
-          Menampilkan <strong className="text-[#1E293B]">{filtered.length}</strong> catatan aktivitas
-        </div>
-      </div>
-
-      {/* Activity List Cards */}
-      <div className="bg-white border border-[#D9E0E8] rounded-xl shadow-xs divide-y divide-[#D9E0E8] overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center text-[#526174]">
-            <p className="font-semibold text-base text-[#1E293B]">Tidak ada catatan aktivitas ditemukan.</p>
-            <p className="text-xs mt-1">Coba gunakan kata kunci atau pilihan filter yang berbeda.</p>
-          </div>
-        ) : (
-          filtered.map((act) => {
-            const order = orders.find((o) => o.order_id === act.related_order_id);
-            const partner = order
-              ? partners.find((p) => p.partner_id === order.partner_id)
-              : null;
-
-            return (
-              <div
-                key={act.activity_id}
-                className="p-5 hover:bg-[#F8FAFC] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
-              >
-                <div className="flex items-start gap-3.5 min-w-0">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                      act.activity_type === 'pesanan'
-                        ? 'bg-blue-100 text-[#0077C8]'
-                        : act.activity_type === 'produksi'
-                        ? 'bg-indigo-100 text-[#1B365D]'
-                        : 'bg-emerald-100 text-[#18794E]'
-                    }`}
-                  >
-                    {act.activity_type === 'pesanan' && <ClipboardPlus className="w-5 h-5" />}
-                    {act.activity_type === 'produksi' && <Factory className="w-5 h-5" />}
-                    {act.activity_type === 'pengiriman' && <Truck className="w-5 h-5" />}
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-base font-semibold text-[#1E293B] leading-snug">
-                      {act.description}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#526174] mt-1.5">
-                      <span>
-                        Ref:{' '}
-                        <strong className="font-mono text-[#0077C8]">{act.related_order_id}</strong>
-                      </span>
-                      {partner && <span>· Mitra: {partner.partner_name}</span>}
-                      <span>· Petugas: {act.recorded_by}</span>
+      {filtered.length === 0 ? (
+        <Card as="div">
+          <EmptyState
+            icon={<History className="w-10 h-10" />}
+            title="Tidak ada catatan yang cocok"
+            description="Ubah kata pencarian atau pilih jenis catatan lain."
+          />
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {groups.map(([day, items]) => (
+            <section key={day} aria-label={`Catatan ${day}`}>
+              <h2 className="text-lg font-bold text-ink mb-3">{day}</h2>
+              <ul className="bg-surface border border-line rounded-card shadow-card divide-y divide-line">
+                {items.map((a) => (
+                  <li key={a.activity_id} className="p-4 md:p-5 flex gap-4">
+                    <span className="w-10 h-10 rounded-lg bg-canvas text-navy flex items-center justify-center shrink-0">
+                      {ICON[a.activity_type]}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-ink-muted">
+                        {TYPE_LABEL[a.activity_type]} · {formatDateTime(a.timestamp)}
+                      </p>
+                      <p className="text-base md:text-[17px] text-ink font-medium mt-0.5">{a.description}</p>
+                      <p className="mt-1 text-[15px] text-ink-muted">
+                        Oleh {a.recorded_by}
+                        {a.input_at && a.activity_type !== 'pesanan' && <> · diinput {formatDateTime(a.input_at)}</>}
+                        {a.source === 'data_contoh' && <> · data contoh</>}
+                      </p>
                     </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 self-end md:self-auto shrink-0">
-                  <span className="text-xs font-medium text-[#526174]">{act.timestamp}</span>
-                  <button
-                    onClick={() => onSelectOrder(act.related_order_id)}
-                    className="px-3 py-1.5 bg-white hover:bg-blue-50 text-[#0077C8] border border-[#D9E0E8] rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Lihat Pesanan</span>
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+                    <div className="shrink-0 self-center">
+                      <Button variant="quiet" onClick={() => onSelectOrder(a.related_order_id)}>
+                        <span className="font-mono">{a.related_order_id}</span>
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+          {filtered.length > limit && (
+            <div className="flex justify-center">
+              <Button variant="secondary" size="lg" onClick={() => setLimit((l) => l + 30)}>
+                Tampilkan lebih banyak ({filtered.length - limit} lagi)
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

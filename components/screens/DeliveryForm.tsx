@@ -1,29 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Truck,
-  CheckCircle2,
-  AlertCircle,
-  ArrowRight,
-  ArrowLeft,
-  ChevronDown,
-  ChevronUp,
-  FileCheck2,
-  AlertTriangle,
-} from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, Truck, MapPin } from 'lucide-react';
 import { Order, Partner, Product, ProductionRecord, DeliveryRecord } from '../../types';
-import { calculateSingleOrderProgress, validateDeliveryInput } from '../../utils/operations';
+import { calculateSingleOrderProgress, getVerificationStatus, validateDeliveryForm } from '../../utils/operations';
+import { formatDate, formatDateTime, nowLocalDateTime, sortableTime } from '../../lib/format';
+import { newClientRef } from '../../lib/repository';
+import { PageHeader, Card, Notice, EmptyState } from '../ui/Layout';
+import { Field, QtyInput, ErrorSummary, inputClass } from '../ui/Field';
+import { Button } from '../ui/Button';
+import { Dialog } from '../ui/Dialog';
+import { VerificationBadge, ORDER_STATUS_LABEL } from '../ui/StatusBadge';
+import { OrderPicker } from '../OrderPicker';
+import { SavedReceipt, StaffNotice, WriteContext, useBeforeUnload } from './shared';
 
-interface DeliveryFormProps {
+interface DeliveryFormProps extends WriteContext {
   orders: Order[];
   partners: Partner[];
   products: Product[];
   productionRecords: ProductionRecord[];
   deliveryRecords: DeliveryRecord[];
   preSelectedOrderId?: string;
-  onSaveDelivery: (record: DeliveryRecord) => void;
   onCancel: () => void;
   onViewOrderDetail: (orderId: string) => void;
 }
+
+const LABELS: Record<string, string> = {
+  order_id: 'Pesanan',
+  quantity_shipped: 'Jumlah dikirim',
+  shipped_at: 'Waktu berangkat',
+  delivery_note: 'Nomor surat jalan',
+  actor: 'Petugas',
+};
 
 export const DeliveryForm: React.FC<DeliveryFormProps> = ({
   orders,
@@ -32,440 +38,417 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
   productionRecords,
   deliveryRecords,
   preSelectedOrderId,
-  onSaveDelivery,
   onCancel,
   onViewOrderDetail,
+  repo,
+  apply,
+  actor,
+  onRequireStaff,
+  onDirtyChange,
+  storageKind,
 }) => {
-  const [selectedOrderId, setSelectedOrderId] = useState<string>(preSelectedOrderId || '');
-  const [shippedQty, setShippedQty] = useState<string>('');
-  const [deliveryNote, setDeliveryNote] = useState<string>(
-    `SJ-PHM-2026-00${Math.floor(45 + Math.random() * 50)}`
-  );
-  const [notes, setNotes] = useState<string>('');
-  const [showOptional, setShowOptional] = useState<boolean>(false);
+  const [clientRef, setClientRef] = useState(newClientRef);
+  const [orderId, setOrderId] = useState(preSelectedOrderId || '');
+  const [qty, setQty] = useState('');
+  const [shippedAt, setShippedAt] = useState(() => nowLocalDateTime());
+  const [deliveryNote, setDeliveryNote] = useState('');
+  const [notes, setNotes] = useState('');
 
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [warningMessage, setWarningMessage] = useState<string | null>(null);
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
-  const [isSuccess, setIsSuccess] = useState<boolean>(false);
-  const [savedDelivery, setSavedDelivery] = useState<DeliveryRecord | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState<{ record: DeliveryRecord; duplicate?: boolean } | null>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (preSelectedOrderId) {
-      setSelectedOrderId(preSelectedOrderId);
-    }
+    if (preSelectedOrderId) setOrderId(preSelectedOrderId);
   }, [preSelectedOrderId]);
 
-  const selectedOrder = orders.find((o) => o.order_id === selectedOrderId);
-  const selectedPartner = selectedOrder
-    ? partners.find((p) => p.partner_id === selectedOrder.partner_id)
-    : null;
-  const selectedProduct = selectedOrder
-    ? products.find((p) => p.product_id === selectedOrder.product_id)
-    : null;
+  const dirty = !saved && !!(qty || deliveryNote || notes);
+  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
+  useBeforeUnload(dirty);
 
-  const orderProgress = selectedOrder
-    ? calculateSingleOrderProgress(selectedOrder, productionRecords, deliveryRecords)
-    : null;
+  const order = orders.find((o) => o.order_id === orderId);
+  const partner = order ? partners.find((p) => p.partner_id === order.partner_id) : undefined;
+  const product = order ? products.find((p) => p.product_id === order.product_id) : undefined;
+  const progress = order ? calculateSingleOrderProgress(order, productionRecords, deliveryRecords) : undefined;
+  const readyToShip = progress ? Math.max(0, progress.totalProduced - progress.totalShipped) : 0;
+  const suggested = progress ? Math.min(readyToShip, progress.remainingDelivery) : 0;
 
-  const handlePreSubmit = (e: React.FormEvent) => {
+  const liveOver = progress && qty !== '' && Number(qty) > progress.remainingDelivery;
+  const liveOverStock = progress && qty !== '' && !liveOver && Number(qty) > readyToShip;
+
+  const recent = useMemo(
+    () =>
+      [...deliveryRecords]
+        .filter((r) => !orderId || r.order_id === orderId)
+        .sort((a, b) => sortableTime(b.shipped_at) - sortableTime(a.shipped_at))
+        .slice(0, 5),
+    [deliveryRecords, orderId]
+  );
+
+  const clearError = (key: string) => setErrors((prev) => (prev[key] ? { ...prev, [key]: '' } : prev));
+
+  const doSave = async () => {
+    if (!repo || !actor) return;
+    setSaving(true);
+    setStorageError(null);
+    try {
+      const result = apply(
+        await repo.createDelivery(
+          { order_id: orderId, quantity_shipped: Number(qty), shipped_at: shippedAt, delivery_note: deliveryNote, notes },
+          actor,
+          clientRef
+        )
+      );
+      if (result.ok) setSaved({ record: result.record, duplicate: result.duplicate });
+      else if (result.reason === 'validation') setErrors(result.errors);
+      else setStorageError(result.message);
+    } catch {
+      setStorageError('Data BELUM tersimpan karena terjadi gangguan. Isian Anda masih ada — silakan coba simpan lagi.');
+    } finally {
+      setSaving(false);
+      setConfirmOpen(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
-    setWarningMessage(null);
-
-    const validation = validateDeliveryInput(
-      selectedOrderId,
-      Number(shippedQty),
-      orderProgress || undefined
+    const v = validateDeliveryForm(
+      { order_id: orderId, quantity_shipped: qty, shipped_at: shippedAt, delivery_note: deliveryNote },
+      progress,
+      deliveryRecords
     );
-
-    if (!validation.isValid) {
-      setErrorMessage(validation.error || 'Periksa kembali data pengiriman.');
+    const errs = { ...v.errors };
+    if (!actor) errs.actor = 'Pilih nama petugas di bagian bawah form.';
+    setErrors(errs);
+    setWarnings(v.warnings);
+    if (Object.keys(errs).length) {
+      requestAnimationFrame(() => summaryRef.current?.querySelector<HTMLElement>('[role=alert]')?.focus());
       return;
     }
-
-    if (validation.warning) {
-      setWarningMessage(validation.warning);
+    if (v.warnings.length || !deliveryNote.trim()) {
+      setConfirmOpen(true);
+      return;
     }
-
-    setShowConfirmModal(true);
+    void doSave();
   };
 
-  const handleFinalSubmit = () => {
-    const recordId = deliveryNote.trim() || `SJ-PHM-2026-${Date.now().toString().slice(-4)}`;
-    const newRecord: DeliveryRecord = {
-      delivery_id: recordId,
-      order_id: selectedOrderId,
-      quantity_shipped: Number(shippedQty),
-      shipped_at: '2026-11-06 10:45',
-      delivery_note: recordId,
-      recorded_by: 'Budi Santoso (Petugas Pengiriman)',
-      notes: notes.trim() || undefined,
-    };
-
-    onSaveDelivery(newRecord);
-    setSavedDelivery(newRecord);
-    setShowConfirmModal(false);
-    setIsSuccess(true);
+  const startAnother = () => {
+    setClientRef(newClientRef());
+    setQty('');
+    setDeliveryNote('');
+    setNotes('');
+    setShippedAt(nowLocalDateTime());
+    setErrors({});
+    setWarnings([]);
+    setSaved(null);
   };
 
-  // SUCCESS CONFIRMATION RECEIPT
-  if (isSuccess && savedDelivery && selectedOrder) {
+  if (saved) {
+    const r = saved.record;
+    const o = orders.find((x) => x.order_id === r.order_id);
+    const p = o ? calculateSingleOrderProgress(o, productionRecords, deliveryRecords) : undefined;
     return (
-      <div className="max-w-2xl mx-auto py-8 animate-in zoom-in-95 duration-200">
-        <div className="bg-white border border-[#D9E0E8] rounded-xl p-8 shadow-sm text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-50 text-[#18794E] flex items-center justify-center mx-auto mb-4 border border-emerald-200">
-            <CheckCircle2 className="w-9 h-9" />
-          </div>
-
-          <h2 className="text-2xl font-bold text-[#1E293B]">Pengiriman Berhasil Dicatat</h2>
-          <p className="text-sm md:text-base text-[#526174] mt-1.5">
-            Informasi pengiriman pada pesanan <strong className="font-mono text-[#0077C8]">{selectedOrder.order_id}</strong> telah diperbarui dalam data simulasi BEESHA.
-          </p>
-
-          <div className="mt-6 p-5 rounded-xl bg-[#F8FAFC] border border-[#D9E0E8] text-left space-y-3">
-            <h4 className="text-xs font-bold uppercase text-[#526174] tracking-wider">
-              Tanda Bukti Surat Jalan Pengiriman
-            </h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-xs text-[#526174]">No. Surat Jalan:</span>
-                <p className="font-mono font-semibold text-[#1E293B]">{savedDelivery.delivery_id}</p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Mitra Penerima:</span>
-                <p className="font-semibold text-[#1E293B]">{selectedPartner?.partner_name}</p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Barang / Part:</span>
-                <p className="font-semibold text-[#1E293B]">{selectedProduct?.product_name}</p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Jumlah Dikirim:</span>
-                <p className="font-bold text-base text-[#18794E] tabular-nums">
-                  {savedDelivery.quantity_shipped.toLocaleString('id-ID')} pcs
-                </p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Petugas Ekspedisi:</span>
-                <p className="font-semibold text-[#1E293B]">{savedDelivery.recorded_by}</p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Waktu Keberangkatan:</span>
-                <p className="font-semibold text-[#1E293B]">{savedDelivery.shipped_at} WIB</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => {
-                setIsSuccess(false);
-                setShippedQty('');
-                setNotes('');
-                setDeliveryNote(`SJ-PHM-2026-00${Math.floor(50 + Math.random() * 50)}`);
-                setSavedDelivery(null);
-              }}
-              className="h-[52px] px-6 bg-[#0077C8] hover:bg-[#0069b2] text-white font-semibold text-base rounded-[10px] flex items-center justify-center gap-2 cursor-pointer shadow-xs focus-beesha"
-            >
-              <span>Catat Pengiriman Lagi</span>
-              <Truck className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => onViewOrderDetail(selectedOrder.order_id)}
-              className="h-[52px] px-6 bg-white hover:bg-slate-50 text-[#1B365D] border border-[#1B365D] font-semibold text-base rounded-[10px] cursor-pointer"
-            >
-              Lihat Detail Pesanan
-            </button>
-          </div>
-        </div>
-      </div>
+      <SavedReceipt
+        title="Data pengiriman berhasil disimpan"
+        idLabel="Nomor catatan"
+        idValue={r.delivery_id}
+        duplicate={saved.duplicate}
+        createdAt={r.created_at}
+        storageKind={storageKind}
+        needsVerification
+        details={[
+          { label: 'Pesanan', value: `${r.order_id} · ${partners.find((x) => x.partner_id === o?.partner_id)?.partner_name ?? ''}` },
+          { label: 'Jumlah dikirim', value: `${r.quantity_shipped.toLocaleString('id-ID')} pcs` },
+          { label: 'Nomor surat jalan', value: r.delivery_note ?? 'Belum diisi' },
+          { label: 'Waktu berangkat', value: formatDateTime(r.shipped_at) },
+          { label: 'Dicatat oleh', value: r.recorded_by },
+          ...(p
+            ? [
+                {
+                  label: 'Status pesanan sekarang',
+                  value: `${ORDER_STATUS_LABEL[p.computedStatus]} — sisa ${p.remainingDelivery.toLocaleString('id-ID')} pcs`,
+                },
+              ]
+            : []),
+        ]}
+        actions={
+          <>
+            <Button size="lg" onClick={() => onViewOrderDetail(r.order_id)} iconRight={<ArrowRight className="w-5 h-5" />}>
+              Lihat detail pesanan
+            </Button>
+            <Button size="lg" variant="secondary" onClick={startAnother} icon={<Truck className="w-5 h-5" />}>
+              Catat pengiriman lain
+            </Button>
+          </>
+        }
+      />
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onCancel}
-              className="p-1.5 hover:bg-slate-100 rounded-lg text-[#526174] transition-colors"
-              title="Kembali"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#1E293B]">Catat Pengiriman Barang</h1>
+    <div className="space-y-6">
+      <PageHeader
+        title="Catat Pengiriman"
+        description="Pilih pesanan, lalu isi jumlah barang yang berangkat ke mitra. Pengiriman bertahap boleh."
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <form onSubmit={handleSubmit} noValidate className="lg:col-span-8 space-y-6" aria-label="Form pengiriman">
+          <div ref={summaryRef}>
+            <ErrorSummary errors={errors} labels={LABELS} />
           </div>
-          <p className="text-sm md:text-base text-[#526174] mt-1 ml-9">
-            Pilih pesanan dan catat barang yang sudah dikirim kepada mitra.
-          </p>
-        </div>
-      </div>
+          {storageError && (
+            <Notice tone="danger" title="Pengiriman belum tersimpan" role="alert">
+              {storageError}
+            </Notice>
+          )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
-        {/* Form Container (8 cols) */}
-        <div className="lg:col-span-8 bg-white border border-[#D9E0E8] rounded-xl p-6 md:p-8 shadow-xs">
-          <form onSubmit={handlePreSubmit} className="space-y-6">
-            {/* Field 1: Pilih Pesanan */}
-            <div>
-              <label htmlFor="delivery-order-select" className="block text-base font-semibold text-[#1E293B] mb-2">
-                Pilih Pesanan untuk Dikirim <span className="text-[#B42318]">*</span>
-              </label>
-              <select
-                id="delivery-order-select"
-                value={selectedOrderId}
-                onChange={(e) => {
-                  setSelectedOrderId(e.target.value);
-                  setErrorMessage(null);
-                }}
-                className={`w-full h-[56px] px-4 bg-[#F8FAFC] border rounded-lg text-base text-[#1E293B] focus-beesha outline-none cursor-pointer ${
-                  errorMessage && !selectedOrderId ? 'border-[#B42318] bg-red-50/20' : 'border-[#D9E0E8]'
-                }`}
-              >
-                <option value="">-- Pilih Nomor Pesanan atau Mitra --</option>
-                {orders.map((o) => {
-                  const p = partners.find((pt) => pt.partner_id === o.partner_id);
-                  const prd = products.find((prod) => prod.product_id === o.product_id);
-                  const prog = calculateSingleOrderProgress(o, productionRecords, deliveryRecords);
-                  return (
-                    <option key={o.order_id} value={o.order_id}>
-                      {o.order_id} — {p?.partner_name} ({prd?.product_name} - Sisa kirim: {prog.remainingDelivery} pcs)
-                    </option>
-                  );
-                })}
-              </select>
-              <p className="text-xs text-[#526174] mt-1.5">
-                Pilih pesanan yang memiliki barang siap kirim.
-              </p>
-            </div>
+          <Card title="1. Pesanan mana yang dikirim?">
+            <OrderPicker
+              id="order_id"
+              legend="Pilih pesanan"
+              mode="pengiriman"
+              orders={orders}
+              partners={partners}
+              products={products}
+              productionRecords={productionRecords}
+              deliveryRecords={deliveryRecords}
+              value={orderId}
+              onChange={(id) => {
+                setOrderId(id);
+                clearError('order_id');
+                clearError('quantity_shipped');
+              }}
+              error={errors.order_id}
+            />
+          </Card>
 
-            {/* Order Summary Card (Section 11.3) */}
-            {selectedOrder && orderProgress && (
-              <div className="p-5 rounded-xl bg-[#F8FAFC] border border-[#D9E0E8] space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b border-[#D9E0E8]">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1B365D]">
-                    Ringkasan Progres Pesanan
-                  </h4>
-                  <span className="text-xs font-mono font-medium text-[#526174]">
-                    Mitra: {selectedPartner?.partner_name}
+          <Card title="2. Detail pengiriman">
+            {order && progress && (
+              <div className="mb-6 p-4 rounded-card bg-subtle border border-line space-y-3">
+                <p className="flex items-start gap-2 text-base">
+                  <MapPin className="w-5 h-5 text-navy shrink-0 mt-0.5" aria-hidden />
+                  <span>
+                    Tujuan: <strong>{partner?.partner_name}</strong>, {partner?.city}
+                    <span className="block text-sm text-ink-muted">
+                      PIC {order.pic_mitra || partner?.pic_name} · {product?.product_name}
+                    </span>
                   </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                  <div className="p-3 bg-white rounded-lg border border-[#D9E0E8]">
-                    <span className="text-xs text-[#526174]">Dipesan</span>
-                    <p className="text-lg font-bold text-[#1E293B] tabular-nums mt-0.5">
-                      {orderProgress.totalOrdered} pcs
-                    </p>
+                </p>
+                <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <dt className="text-sm text-ink-muted">Dipesan</dt>
+                    <dd className="text-lg font-bold tabular-nums">{progress.totalOrdered.toLocaleString('id-ID')}</dd>
                   </div>
-                  <div className="p-3 bg-white rounded-lg border border-[#D9E0E8]">
-                    <span className="text-xs text-[#526174]">Diproduksi</span>
-                    <p className="text-lg font-bold text-[#0077C8] tabular-nums mt-0.5">
-                      {orderProgress.totalProduced} pcs
-                    </p>
+                  <div>
+                    <dt className="text-sm text-ink-muted">Sudah dikirim</dt>
+                    <dd className="text-lg font-bold tabular-nums text-success">{progress.totalShipped.toLocaleString('id-ID')}</dd>
                   </div>
-                  <div className="p-3 bg-white rounded-lg border border-[#D9E0E8]">
-                    <span className="text-xs text-[#526174]">Sudah Dikirim</span>
-                    <p className="text-lg font-bold text-[#18794E] tabular-nums mt-0.5">
-                      {orderProgress.totalShipped} pcs
-                    </p>
+                  <div>
+                    <dt className="text-sm text-ink-muted">Siap kirim</dt>
+                    <dd className="text-lg font-bold tabular-nums text-info">{readyToShip.toLocaleString('id-ID')}</dd>
                   </div>
-                  <div className="p-3 bg-white rounded-lg border border-[#D9E0E8]">
-                    <span className="text-xs text-[#526174]">Sisa Pengiriman</span>
-                    <p className="text-lg font-bold text-[#B54708] tabular-nums mt-0.5">
-                      {orderProgress.remainingDelivery} pcs
-                    </p>
+                  <div>
+                    <dt className="text-sm text-ink-muted">Sisa belum dikirim</dt>
+                    <dd className="text-lg font-bold tabular-nums text-warning">
+                      {progress.remainingDelivery.toLocaleString('id-ID')}
+                    </dd>
                   </div>
-                </div>
+                </dl>
               </div>
             )}
 
-            {/* Field 2: Jumlah Dikirim */}
-            <div>
-              <label htmlFor="shipped-qty" className="block text-base font-semibold text-[#1E293B] mb-2">
-                Jumlah Barang yang Dikirim <span className="text-[#B42318]">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  id="shipped-qty"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={shippedQty}
-                  onChange={(e) => {
-                    setShippedQty(e.target.value);
-                    setErrorMessage(null);
-                  }}
-                  placeholder="Masukkan jumlah unit dikirim"
-                  className="w-full h-[56px] pl-4 pr-14 bg-[#F8FAFC] border border-[#D9E0E8] focus:border-[#0077C8] rounded-lg text-lg text-[#1E293B] font-bold tabular-nums focus-beesha outline-none"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-base font-semibold text-[#526174] pointer-events-none">
-                  pcs
-                </span>
-              </div>
-              <p className="text-xs text-[#526174] mt-1.5">
-                Pastikan kuantitas fisik telah dihitung saat dimuat ke armada truk ekspedisi.
-              </p>
-            </div>
-
-            {/* Error Message */}
-            {errorMessage && (
-              <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 text-sm text-[#B42318] flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
-
-            {/* Optional Collapsed Section */}
-            <div className="pt-2 border-t border-[#D9E0E8]">
-              <button
-                type="button"
-                onClick={() => setShowOptional(!showOptional)}
-                className="flex items-center gap-2 text-sm font-semibold text-[#0077C8] hover:underline cursor-pointer"
+            <div className="space-y-6">
+              <Field
+                id="quantity_shipped"
+                label="Jumlah dikirim"
+                required
+                error={errors.quantity_shipped}
+                hint={
+                  order && suggested > 0 && Number(qty) !== suggested ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQty(String(suggested));
+                        clearError('quantity_shipped');
+                      }}
+                      className="min-h-[44px] font-semibold text-brand underline underline-offset-4 cursor-pointer"
+                    >
+                      Isi {suggested.toLocaleString('id-ID')} pcs (semua barang siap kirim)
+                    </button>
+                  ) : (
+                    'Hitung barang yang naik ke kendaraan.'
+                  )
+                }
               >
-                {showOptional ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                <span>{showOptional ? 'Sembunyikan Informasi Ekspedisi' : 'Tambah Surat Jalan & Armada (Opsional)'}</span>
-              </button>
+                {(d) => (
+                  <QtyInput
+                    id="quantity_shipped"
+                    aria-describedby={d}
+                    aria-invalid={!!errors.quantity_shipped}
+                    value={qty}
+                    hasError={!!errors.quantity_shipped}
+                    onValueChange={(v) => {
+                      setQty(v);
+                      clearError('quantity_shipped');
+                    }}
+                    placeholder="0"
+                    className="text-xl md:max-w-sm"
+                  />
+                )}
+              </Field>
 
-              {showOptional && (
-                <div className="mt-4 space-y-4 p-4 rounded-lg bg-[#F8FAFC] border border-[#D9E0E8] animate-in fade-in duration-200">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1E293B] mb-1">
-                      Nomor Surat Jalan (Surat Pengantar Ekspedisi)
-                    </label>
-                    <input
-                      type="text"
-                      value={deliveryNote}
-                      onChange={(e) => setDeliveryNote(e.target.value)}
-                      placeholder="Contoh: SJ-PHM-2026-0045"
-                      className="w-full h-12 px-4 bg-white border border-[#D9E0E8] rounded-lg text-sm text-[#1E293B] font-mono focus-beesha outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1E293B] mb-1">
-                      Catatan Pengiriman / Armada
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Contoh: Truk Colt Diesel B 9812 PHM, sopir Pak Yanto"
-                      className="w-full p-3 bg-white border border-[#D9E0E8] rounded-lg text-sm text-[#1E293B] focus-beesha outline-none resize-none"
-                    />
-                  </div>
-                </div>
+              {liveOver && (
+                <Notice tone="danger" title="Melebihi sisa pesanan">
+                  Sisa yang belum dikirim hanya {progress!.remainingDelivery.toLocaleString('id-ID')} pcs. Kurangi jumlahnya.
+                </Notice>
               )}
-            </div>
+              {liveOverStock && (
+                <Notice tone="warning" title="Lebih banyak dari barang siap kirim">
+                  Tercatat baru {readyToShip.toLocaleString('id-ID')} pcs barang jadi yang belum dikirim. Pastikan hasil
+                  produksi sudah dicatat. Boleh disimpan, tetapi akan ditandai untuk diperiksa.
+                </Notice>
+              )}
 
-            {/* Form Actions */}
-            <div className="pt-6 border-t border-[#D9E0E8] flex flex-col sm:flex-row items-center justify-end gap-4">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="w-full sm:w-auto h-[52px] px-6 bg-white hover:bg-slate-50 text-[#1B365D] border border-[#1B365D] font-semibold text-base rounded-[10px] cursor-pointer transition-colors"
-              >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Field
+                  id="delivery_note"
+                  label="Nomor surat jalan"
+                  error={errors.delivery_note}
+                  hint="Salin dari lembar surat jalan. Sangat dianjurkan diisi."
+                >
+                  {(d) => (
+                    <input
+                      id="delivery_note"
+                      type="text"
+                      autoComplete="off"
+                      aria-describedby={d}
+                      aria-invalid={!!errors.delivery_note}
+                      value={deliveryNote}
+                      onChange={(e) => {
+                        setDeliveryNote(e.target.value);
+                        clearError('delivery_note');
+                      }}
+                      placeholder="Contoh: SJ-0001"
+                      className={inputClass(!!errors.delivery_note)}
+                    />
+                  )}
+                </Field>
+                <Field id="shipped_at" label="Waktu berangkat" required error={errors.shipped_at} hint="Terisi jam sekarang. Ubah bila perlu.">
+                  {(d) => (
+                    <input
+                      id="shipped_at"
+                      type="datetime-local"
+                      aria-describedby={d}
+                      aria-invalid={!!errors.shipped_at}
+                      value={shippedAt}
+                      max={nowLocalDateTime()}
+                      onChange={(e) => {
+                        setShippedAt(e.target.value);
+                        clearError('shipped_at');
+                      }}
+                      className={inputClass(!!errors.shipped_at)}
+                    />
+                  )}
+                </Field>
+              </div>
+
+              <Field id="notes" label="Catatan (kendaraan, sopir, kendala)">
+                {(d) => (
+                  <textarea
+                    id="notes"
+                    rows={2}
+                    aria-describedby={d}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Mis. truk B 1234 XX, sopir Pak Udin"
+                    className={inputClass(false, 'py-3 resize-y')}
+                  />
+                )}
+              </Field>
+            </div>
+          </Card>
+
+          <div className="bg-surface border border-line rounded-card p-5 md:p-6 space-y-4">
+            <StaffNotice actor={actor} onRequireStaff={onRequireStaff} />
+            {order && qty && Number(qty) > 0 && (
+              <p className="text-base text-ink">
+                Akan disimpan: <strong>{Number(qty).toLocaleString('id-ID')} pcs</strong> dikirim ke{' '}
+                <strong>{partner?.partner_name}</strong> (PO {order.po_number}).
+              </p>
+            )}
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+              <Button variant="secondary" size="lg" onClick={onCancel} disabled={saving}>
                 Batal
-              </button>
-              <button
-                type="submit"
-                className="w-full sm:w-auto min-w-[200px] h-[52px] px-8 bg-[#0077C8] hover:bg-[#0069b2] active:bg-[#005a99] text-white font-semibold text-base rounded-[10px] shadow-xs cursor-pointer transition-colors focus-beesha"
-              >
-                Simpan Pengiriman
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Informational Side Card (4 cols) */}
-        <div className="lg:col-span-4 bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-[#D9E0E8]">
-            <Truck className="w-5 h-5 text-[#0077C8]" />
-            <h3 className="text-lg font-bold text-[#1E293B]">Informasi Pengiriman</h3>
-          </div>
-
-          <div className="space-y-3 text-sm">
-            <div>
-              <span className="text-xs text-[#526174]">Tanggal Keberangkatan:</span>
-              <p className="font-semibold text-[#1E293B]">06 November 2026, 10:45 WIB</p>
-            </div>
-            <div>
-              <span className="text-xs text-[#526174]">Petugas Logistik:</span>
-              <p className="font-semibold text-[#1E293B]">Budi Santoso (Petugas Pengiriman)</p>
-            </div>
-            <div>
-              <span className="text-xs text-[#526174]">Gudang Asal:</span>
-              <p className="font-semibold text-[#1E293B]">Gudang Barang Jadi PHM Cikarang</p>
+              </Button>
+              <Button type="submit" size="lg" loading={saving} loadingText="Menyimpan…" className="sm:min-w-[240px]">
+                Simpan Data Pengiriman
+              </Button>
             </div>
           </div>
+        </form>
 
-          <div className="p-4 rounded-lg bg-[#F8FAFC] border border-[#D9E0E8] text-xs text-[#526174] leading-relaxed">
-            📦 <strong>Kaidah Validasi:</strong> Sistem mencegah pengiriman melebihi sisa pesanan belum terkirim. Jika sisa pesanan terpenuhi penuh, status pesanan otomatis berganti menjadi <em>Selesai</em>.
-          </div>
-        </div>
+        <aside className="lg:col-span-4">
+          <Card title="Riwayat pengiriman" description={order ? `Untuk pesanan ${order.order_id}` : 'Semua pesanan'} as="div">
+            {recent.length === 0 ? (
+              <EmptyState title="Belum ada pengiriman" description="Pengiriman pesanan ini akan muncul di sini." />
+            ) : (
+              <ul className="divide-y divide-line -my-3">
+                {recent.map((r) => (
+                  <li key={r.delivery_id} className="py-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-[17px] font-bold tabular-nums">{r.quantity_shipped.toLocaleString('id-ID')} pcs</span>
+                      <span className="text-sm text-ink-muted">{formatDateTime(r.shipped_at)}</span>
+                    </div>
+                    <p className="text-sm text-ink-muted">
+                      {r.order_id} · SJ {r.delivery_note ?? '—'}
+                    </p>
+                    <div className="mt-1.5">
+                      <VerificationBadge status={getVerificationStatus(r)} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {order && <p className="mt-4 text-sm text-ink-muted">Tenggat pesanan: {formatDate(order.due_date)}</p>}
+          </Card>
+        </aside>
       </div>
 
-      {/* Confirmation Modal (Section 11.4) */}
-      {showConfirmModal && selectedOrder && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-[#D9E0E8] max-w-lg w-full p-6 shadow-2xl animate-in zoom-in-95 duration-150">
-            <h3 className="text-xl font-bold text-[#1E293B]">Konfirmasi Pengiriman Barang</h3>
-            <p className="text-sm text-[#526174] mt-1">
-              Pastikan jumlah fisik barang yang dikirim sudah diverifikasi dengan benar:
-            </p>
-
-            <div className="mt-5 p-4 rounded-lg bg-[#F8FAFC] border border-[#D9E0E8] space-y-2.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Pesanan:</span>
-                <span className="font-mono font-bold text-[#1B365D]">{selectedOrder.order_id}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Mitra Penerima:</span>
-                <span className="font-semibold text-[#1E293B]">{selectedPartner?.partner_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Barang / Part:</span>
-                <span className="font-semibold text-[#1E293B]">{selectedProduct?.product_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Jumlah Dikirim:</span>
-                <span className="font-bold text-base text-[#18794E] tabular-nums">
-                  {shippedQty} pcs
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Surat Jalan:</span>
-                <span className="font-mono font-medium text-[#1E293B]">{deliveryNote}</span>
-              </div>
-
-              {warningMessage && (
-                <div className="mt-2 p-2.5 rounded bg-amber-50 border border-amber-200 text-xs text-[#B54708] flex items-start gap-1.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{warningMessage}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-                className="h-12 px-5 bg-white hover:bg-slate-50 text-[#1B365D] border border-[#D9E0E8] font-semibold text-sm rounded-lg cursor-pointer"
-              >
-                Periksa Kembali
-              </button>
-              <button
-                type="button"
-                onClick={handleFinalSubmit}
-                className="h-12 px-6 bg-[#0077C8] hover:bg-[#0069b2] text-white font-semibold text-sm rounded-lg shadow-xs cursor-pointer focus-beesha"
-              >
-                Ya, Simpan Pengiriman
-              </button>
-            </div>
-          </div>
+      <Dialog
+        open={confirmOpen}
+        title="Periksa sebelum menyimpan"
+        onClose={() => !saving && setConfirmOpen(false)}
+        dismissible={!saving}
+        footer={
+          <>
+            <Button variant="secondary" size="lg" onClick={() => setConfirmOpen(false)} disabled={saving} data-autofocus>
+              Periksa lagi
+            </Button>
+            <Button size="lg" onClick={doSave} loading={saving} loadingText="Menyimpan…">
+              Ya, tetap simpan
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          {warnings.map((w) => (
+            <Notice key={w} tone="warning">
+              {w}
+            </Notice>
+          ))}
+          {!deliveryNote.trim() && (
+            <Notice tone="warning" title="Nomor surat jalan kosong">
+              Tanpa nomor surat jalan, pengiriman ini sulit dicocokkan dengan dokumen fisik.
+            </Notice>
+          )}
         </div>
-      )}
+      </Dialog>
     </div>
   );
 };
