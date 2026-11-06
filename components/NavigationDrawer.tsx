@@ -1,34 +1,21 @@
-import React, { useEffect } from 'react';
-import {
-  X,
-  Home,
-  ClipboardList,
-  Factory,
-  Truck,
-  FileText,
-  History,
-  AlertTriangle,
-  Box,
-  Bot,
-  Info,
-  ChevronRight,
-} from 'lucide-react';
-import { ScreenType } from '../types';
+import React, { useEffect, useRef } from 'react';
+import { X, Box, MessageCircleQuestion, BookOpen, RotateCcw, HardDrive } from 'lucide-react';
+import { ScreenType, Staff } from '../types';
+import { NAV_ITEMS, isNavActive, NavItem } from './navigation';
+import { StorageKind } from '../lib/repository';
 
 interface NavigationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   currentScreen: ScreenType;
   onNavigate: (screen: ScreenType) => void;
-  alertsCount: number;
-}
-
-interface MenuItem {
-  id: ScreenType;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  description: string;
-  badge?: number;
+  badges: Partial<Record<ScreenType, number>>;
+  activeStaff: Staff | null;
+  onOpenStaffPicker: () => void;
+  onOpenAssistant: () => void;
+  onOpenGuide: () => void;
+  onResetData: () => void;
+  storageKind: StorageKind | null;
 }
 
 export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
@@ -36,184 +23,172 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onClose,
   currentScreen,
   onNavigate,
-  alertsCount,
+  badges,
+  activeStaff,
+  onOpenStaffPicker,
+  onOpenAssistant,
+  onOpenGuide,
+  onResetData,
+  storageKind,
 }) => {
-  // Close on Escape key press
+  const closeRef = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+    if (!isOpen) return;
+    const prev = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      prev?.focus?.();
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const menuItems: MenuItem[] = [
-    {
-      id: 'beranda',
-      label: 'Beranda',
-      icon: Home,
-      description: 'Ringkasan operasional dan KPI',
-    },
-    {
-      id: 'daftar_pesanan',
-      label: 'Pemesanan Mitra',
-      icon: ClipboardList,
-      description: 'Daftar dan pencatatan pesanan mitra',
-    },
-    {
-      id: 'form_produksi',
-      label: 'Hasil Produksi',
-      icon: Factory,
-      description: 'Input unit produk selesai dibuat',
-    },
-    {
-      id: 'form_pengiriman',
-      label: 'Pengiriman',
-      icon: Truck,
-      description: 'Catat ekspedisi dan surat jalan',
-    },
-    {
-      id: 'detail_pesanan',
-      label: 'Detail Pesanan',
-      icon: FileText,
-      description: 'Pelacakan 3-tahap progres pesanan',
-    },
-    {
-      id: 'riwayat_aktivitas',
-      label: 'Riwayat Aktivitas',
-      icon: History,
-      description: 'Log transaksi operasional terpadu',
-    },
-    {
-      id: 'pusat_peringatan',
-      label: 'Pusat Peringatan',
-      icon: AlertTriangle,
-      description: 'Pekerjaan yang butuh perhatian',
-      badge: alertsCount,
-    },
-    {
-      id: 'inspeksi_3d',
-      label: 'Inspeksi 3D Part',
-      icon: Box,
-      description: 'Model 3D interaktif part & perakitan',
-    },
-  ];
-
-  const handleSelect = (screen: ScreenType) => {
-    onNavigate(screen);
+  const go = (screen: ScreenType) => {
     onClose();
+    onNavigate(screen);
+  };
+
+  const renderItem = (item: NavItem) => {
+    const Icon = item.icon;
+    const active = isNavActive(item, currentScreen);
+    const badge = badges[item.id];
+    return (
+      <li key={item.id}>
+        <button
+          type="button"
+          onClick={() => go(item.id)}
+          aria-current={active ? 'page' : undefined}
+          className={`w-full min-h-[60px] px-3 py-2 rounded-field flex items-center gap-3 text-left cursor-pointer border ${
+            active ? 'bg-brand-soft border-brand/40' : 'border-transparent hover:bg-subtle'
+          }`}
+        >
+          <span
+            className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+              active ? 'bg-brand text-white' : 'bg-canvas text-navy'
+            }`}
+          >
+            <Icon className="w-5 h-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className={`block text-[17px] leading-tight ${active ? 'font-bold text-navy' : 'font-semibold text-ink'}`}>
+              {item.label}
+            </span>
+            <span className="block text-sm text-ink-muted mt-0.5">{item.description}</span>
+          </span>
+          {!!badge && (
+            <span className="min-w-[28px] h-7 px-2 rounded-full bg-danger text-white text-sm font-bold flex items-center justify-center">
+              {badge}
+              <span className="sr-only"> perlu ditindaklanjuti</span>
+            </span>
+          )}
+        </button>
+      </li>
+    );
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true">
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300"
-        aria-hidden="true"
-      />
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Menu utama">
+      <div className="absolute inset-0 bg-ink/60" onClick={onClose} aria-hidden />
 
-      {/* Drawer Surface */}
-      <div className="fixed inset-y-0 left-0 w-[320px] max-w-[88vw] bg-white shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-200">
-        {/* Drawer Header */}
-        <div className="h-[72px] bg-[#1B365D] text-white px-5 flex items-center justify-between border-b border-[#24426f]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-[#0077C8] flex items-center justify-center text-white font-bold text-base">
-              B
-            </div>
-            <div>
-              <div className="font-bold text-lg text-white leading-tight">BEESHA</div>
-              <div className="text-xs text-blue-200">PT Putra Hatim Mandiri</div>
-            </div>
-          </div>
+      <div className="absolute inset-y-0 left-0 w-[340px] max-w-[90vw] bg-surface shadow-2xl flex flex-col">
+        <div className="h-16 bg-navy text-white px-4 flex items-center justify-between shrink-0">
+          <span className="font-bold text-lg">Menu</span>
           <button
+            ref={closeRef}
+            type="button"
             onClick={onClose}
-            aria-label="Tutup menu navigasi"
-            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#24426f] text-white transition-colors cursor-pointer focus-beesha"
+            className="min-h-[48px] px-3 flex items-center gap-2 rounded-field hover:bg-navy-strong text-base font-semibold cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden />
+            Tutup
           </button>
         </div>
 
-        {/* User Identity / Role Banner */}
-        <div className="px-5 py-3.5 bg-[#F8FAFC] border-b border-[#D9E0E8] flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-[#1E293B]">Admin Operasional (AO)</p>
-            <p className="text-[11px] text-[#526174]">Mode Demonstrasi Interaktif</p>
-          </div>
-          <span className="text-[10px] font-semibold text-[#0077C8] bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
-            Aktif
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            onOpenStaffPicker();
+          }}
+          className="px-4 py-3 bg-subtle border-b border-line text-left hover:bg-canvas cursor-pointer"
+        >
+          <span className="block text-sm text-ink-muted">Petugas yang mencatat</span>
+          <span className="block text-base font-semibold text-ink">
+            {activeStaff ? `${activeStaff.name} — ${activeStaff.role_label}` : 'Belum dipilih'}
           </span>
-        </div>
+          <span className="block text-sm font-semibold text-brand mt-0.5">Ganti petugas</span>
+        </button>
 
-        {/* Menu Items List */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 focus:outline-none">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentScreen === item.id;
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleSelect(item.id)}
-                className={`w-full min-h-[56px] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-left transition-all cursor-pointer group focus-beesha ${
-                  isActive
-                    ? 'bg-[#EBF5FB] border border-[#BDE0FE] text-[#0077C8] font-semibold shadow-2xs'
-                    : 'text-[#1E293B] hover:bg-[#F2F4F7] border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                      isActive
-                        ? 'bg-[#0077C8] text-white'
-                        : 'bg-[#E5EAF0] text-[#1B365D] group-hover:bg-[#d5dfea]'
-                    }`}
+        <nav aria-label="Menu utama" className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+          <div>
+            <p className="px-2 mb-2 text-sm font-bold text-ink-muted">Pekerjaan harian</p>
+            <ul className="space-y-1">{NAV_ITEMS.filter((i) => i.group === 'kerja').map(renderItem)}</ul>
+          </div>
+          <div>
+            <p className="px-2 mb-2 text-sm font-bold text-ink-muted">Pemantauan</p>
+            <ul className="space-y-1">{NAV_ITEMS.filter((i) => i.group === 'pantau').map(renderItem)}</ul>
+          </div>
+          <div>
+            <p className="px-2 mb-2 text-sm font-bold text-ink-muted">Lainnya</p>
+            <ul className="space-y-1">
+              {[
+                {
+                  label: 'Tanya Beesha',
+                  icon: MessageCircleQuestion,
+                  onClick: () => {
+                    onClose();
+                    onOpenAssistant();
+                  },
+                },
+                { label: 'Inspeksi 3D Part', icon: Box, onClick: () => go('inspeksi_3d') },
+                {
+                  label: 'Panduan Tampilan',
+                  icon: BookOpen,
+                  onClick: () => {
+                    onClose();
+                    onOpenGuide();
+                  },
+                },
+                {
+                  label: 'Kembalikan Data Contoh',
+                  icon: RotateCcw,
+                  onClick: () => {
+                    onClose();
+                    onResetData();
+                  },
+                },
+              ].map((x) => (
+                <li key={x.label}>
+                  <button
+                    type="button"
+                    onClick={x.onClick}
+                    className="w-full min-h-[52px] px-3 rounded-field flex items-center gap-3 text-left text-base font-semibold text-ink hover:bg-subtle cursor-pointer"
                   >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p
-                      className={`text-base leading-tight truncate ${
-                        isActive ? 'font-bold text-[#0077C8]' : 'font-medium text-[#1E293B]'
-                      }`}
-                    >
-                      {item.label}
-                    </p>
-                    <p className="text-xs text-[#526174] truncate mt-0.5">{item.description}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                  {typeof item.badge === 'number' && item.badge > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#B42318] text-white">
-                      {item.badge}
-                    </span>
-                  )}
-                  <ChevronRight
-                    className={`w-4 h-4 ${
-                      isActive ? 'text-[#0077C8]' : 'text-slate-400 group-hover:text-slate-600'
-                    }`}
-                  />
-                </div>
-              </button>
-            );
-          })}
+                    <x.icon className="w-5 h-5 text-navy" aria-hidden />
+                    {x.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </nav>
 
-        {/* Drawer Footer */}
-        <div className="p-4 border-t border-[#D9E0E8] bg-[#F8FAFC] space-y-2">
-          <div className="flex items-center gap-2 text-xs text-[#526174]">
-            <Info className="w-4 h-4 text-[#0077C8] shrink-0" />
-            <span>Semua data demo tersinkronisasi otomatis di seluruh layar.</span>
-          </div>
-          <p className="text-[11px] text-slate-400 text-center pt-1">
-            BEESHA v2.4 · PT Putra Hatim Mandiri
-          </p>
+        <div className="p-4 border-t border-line bg-subtle text-sm text-ink-muted flex gap-2">
+          <HardDrive className="w-5 h-5 shrink-0 text-navy" aria-hidden />
+          <span>
+            {storageKind === 'sementara'
+              ? 'Penyimpanan perangkat tidak tersedia. Data hanya bertahan selama halaman ini terbuka.'
+              : 'Prototipe: data tersimpan di browser perangkat ini saja, belum ke server atau INDIGO.'}
+          </span>
         </div>
       </div>
     </div>

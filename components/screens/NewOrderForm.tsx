@@ -1,518 +1,454 @@
-import React, { useState } from 'react';
-import {
-  ClipboardPlus,
-  CheckCircle2,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  ArrowRight,
-  ArrowLeft,
-  Building2,
-  Calendar,
-  Layers,
-  FileCheck,
-} from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, ClipboardPlus, Factory } from 'lucide-react';
 import { Partner, Product, Order } from '../../types';
 import { validateOrderInput } from '../../utils/operations';
+import { addDays, formatDate, todayISODate } from '../../lib/format';
+import { newClientRef } from '../../lib/repository';
+import { PageHeader, Card, Notice } from '../ui/Layout';
+import { Field, QtyInput, ErrorSummary, inputClass } from '../ui/Field';
+import { Button } from '../ui/Button';
+import { Dialog } from '../ui/Dialog';
+import { SavedReceipt, StaffNotice, WriteContext, useBeforeUnload } from './shared';
 
-interface NewOrderFormProps {
+interface NewOrderFormProps extends WriteContext {
   partners: Partner[];
   products: Product[];
-  nextOrderNumber: number;
-  onSaveOrder: (newOrder: Order) => void;
+  orders: Order[];
   onCancel: () => void;
   onViewOrderDetail: (orderId: string) => void;
+  onRecordProduction: (orderId: string) => void;
 }
+
+const LABELS: Record<string, string> = {
+  partner_id: 'Nama mitra',
+  po_number: 'Nomor PO',
+  order_date: 'Tanggal pesanan',
+  product_id: 'Barang yang dipesan',
+  quantity_ordered: 'Jumlah dipesan',
+  due_date: 'Target kirim',
+  actor: 'Petugas',
+};
 
 export const NewOrderForm: React.FC<NewOrderFormProps> = ({
   partners,
   products,
-  nextOrderNumber,
-  onSaveOrder,
+  orders,
   onCancel,
   onViewOrderDetail,
+  onRecordProduction,
+  repo,
+  apply,
+  actor,
+  onRequireStaff,
+  onDirtyChange,
+  storageKind,
 }) => {
-  const generatedOrderId = `DEMO-ORD-${String(nextOrderNumber).padStart(3, '0')}`;
-
+  const today = useMemo(() => todayISODate(), []);
+  const [clientRef, setClientRef] = useState(newClientRef);
   const [partnerId, setPartnerId] = useState('');
   const [poNumber, setPoNumber] = useState('');
+  const [orderDate, setOrderDate] = useState(today);
   const [productId, setProductId] = useState('');
-  const [quantity, setQuantity] = useState<string>('');
-  const [dueDate, setDueDate] = useState<string>('2026-11-20');
+  const [quantity, setQuantity] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [picMitra, setPicMitra] = useState('');
   const [notes, setNotes] = useState('');
-  const [showOptionalFields, setShowOptionalFields] = useState(false);
 
-  // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // Confirmation Modal state
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  // Success Receipt state
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState<{ order: Order; duplicate?: boolean } | null>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
-  const selectedPartner = partners.find((p) => p.partner_id === partnerId);
-  const selectedProduct = products.find((p) => p.product_id === productId);
+  const dirty = !saved && !!(partnerId || poNumber || productId || quantity || dueDate || notes);
+  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
+  useBeforeUnload(dirty);
 
-  // When partner is picked, auto-suggest PIC
-  const handlePartnerChange = (pId: string) => {
-    setPartnerId(pId);
-    if (errors.partner_id) setErrors((prev) => ({ ...prev, partner_id: '' }));
-    const p = partners.find((item) => item.partner_id === pId);
-    if (p && !picMitra) {
-      setPicMitra(p.pic_name);
-    }
-  };
+  const partner = partners.find((p) => p.partner_id === partnerId);
+  const product = products.find((p) => p.product_id === productId);
+  const suggestedDue = product ? addDays(orderDate || today, product.standard_lead_time_days) : '';
 
-  const handlePreSubmit = (e: React.FormEvent) => {
+  const clearError = (key: string) => setErrors((prev) => (prev[key] ? { ...prev, [key]: '' } : prev));
+
+  const input = () => ({
+    partner_id: partnerId,
+    po_number: poNumber,
+    product_id: productId,
+    quantity_ordered: Number(quantity),
+    order_date: orderDate,
+    due_date: dueDate,
+    pic_mitra: picMitra,
+    notes,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validation = validateOrderInput({
-      partner_id: partnerId,
-      po_number: poNumber,
-      product_id: productId,
-      quantity_ordered: Number(quantity),
-      due_date: dueDate,
-    });
-
-    if (!validation.isValid) {
-      setErrors(validation.errors);
+    setStorageError(null);
+    const v = validateOrderInput(input(), orders);
+    const errs = { ...v.errors };
+    if (!actor) errs.actor = 'Pilih nama petugas di bagian atas form.';
+    setErrors(errs);
+    if (Object.keys(errs).length) {
+      requestAnimationFrame(() => summaryRef.current?.querySelector<HTMLElement>('[role=alert]')?.focus());
       return;
     }
+    setConfirmOpen(true);
+  };
 
+  const handleSave = async () => {
+    if (!repo || !actor) return;
+    setSaving(true);
+    try {
+      const result = apply(await repo.createOrder(input(), actor, clientRef));
+      if (result.ok) {
+        setSaved({ order: result.record, duplicate: result.duplicate });
+        setConfirmOpen(false);
+      } else if (result.reason === 'validation') {
+        setErrors(result.errors);
+        setConfirmOpen(false);
+      } else {
+        setStorageError(result.message);
+        setConfirmOpen(false);
+      }
+    } catch {
+      setStorageError('Data BELUM tersimpan karena terjadi gangguan. Isian Anda masih ada — silakan coba simpan lagi.');
+      setConfirmOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetForm = () => {
+    setClientRef(newClientRef());
+    setPartnerId('');
+    setPoNumber('');
+    setOrderDate(today);
+    setProductId('');
+    setQuantity('');
+    setDueDate('');
+    setPicMitra('');
+    setNotes('');
     setErrors({});
-    setShowConfirmModal(true);
+    setSaved(null);
   };
 
-  const handleFinalSubmit = () => {
-    const newOrder: Order = {
-      order_id: generatedOrderId,
-      partner_id: partnerId,
-      po_number: poNumber.trim(),
-      product_id: productId,
-      quantity_ordered: Number(quantity),
-      order_date: '2026-11-06',
-      due_date: dueDate,
-      order_status: 'baru',
-      pic_mitra: picMitra.trim() || undefined,
-      notes: notes.trim() || undefined,
-      created_by: 'Siti Rahma (Admin Pesanan)',
-    };
-
-    onSaveOrder(newOrder);
-    setCreatedOrder(newOrder);
-    setShowConfirmModal(false);
-    setIsSuccess(true);
-  };
-
-  // SUCCESS CONFIRMATION RECEIPT SCREEN (Section 9.5 & 10)
-  if (isSuccess && createdOrder) {
+  if (saved) {
+    const o = saved.order;
     return (
-      <div className="max-w-2xl mx-auto py-8 animate-in zoom-in-95 duration-200">
-        <div className="bg-white border border-[#D9E0E8] rounded-xl p-8 shadow-sm text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-50 text-[#18794E] flex items-center justify-center mx-auto mb-4 border border-emerald-200">
-            <CheckCircle2 className="w-9 h-9" />
-          </div>
-
-          <h2 className="text-2xl font-bold text-[#1E293B]">Pesanan Berhasil Dicatat</h2>
-          <p className="text-base text-[#526174] mt-1.5">
-            Nomor Pesanan: <strong className="font-mono text-[#0077C8] text-lg">{createdOrder.order_id}</strong>
-          </p>
-
-          <div className="mt-6 p-5 rounded-xl bg-[#F8FAFC] border border-[#D9E0E8] text-left space-y-3">
-            <h4 className="text-xs font-bold uppercase text-[#526174] tracking-wider">
-              Tanda Bukti Pencatatan Pesanan
-            </h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-xs text-[#526174]">Nama Mitra:</span>
-                <p className="font-semibold text-[#1E293B]">{selectedPartner?.partner_name}</p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Nomor PO Mitra:</span>
-                <p className="font-semibold text-[#1E293B]">{createdOrder.po_number}</p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Nama Barang:</span>
-                <p className="font-semibold text-[#1E293B]">{selectedProduct?.product_name}</p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Jumlah Pesanan:</span>
-                <p className="font-bold text-base text-[#1E293B] tabular-nums">
-                  {createdOrder.quantity_ordered.toLocaleString('id-ID')} pcs
-                </p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Target Pengiriman:</span>
-                <p className="font-semibold text-[#1E293B]">{createdOrder.due_date}</p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Status Awal:</span>
-                <p className="font-semibold text-[#0B63A8]">Pesanan Baru (Antrean Produksi)</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => onViewOrderDetail(createdOrder.order_id)}
-              className="h-[52px] px-6 bg-[#0077C8] hover:bg-[#0069b2] text-white font-semibold text-base rounded-[10px] flex items-center justify-center gap-2 cursor-pointer shadow-xs focus-beesha"
-            >
-              <span>Lihat Detail Pesanan</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={onCancel}
-              className="h-[52px] px-6 bg-white hover:bg-slate-50 text-[#1B365D] border border-[#1B365D] font-semibold text-base rounded-[10px] cursor-pointer"
-            >
-              Kembali ke Beranda
-            </button>
-          </div>
-        </div>
-      </div>
+      <SavedReceipt
+        title="Pesanan berhasil disimpan"
+        idLabel="Nomor pesanan"
+        idValue={o.order_id}
+        duplicate={saved.duplicate}
+        createdAt={o.created_at}
+        storageKind={storageKind}
+        details={[
+          { label: 'Mitra', value: partners.find((p) => p.partner_id === o.partner_id)?.partner_name },
+          { label: 'Nomor PO', value: o.po_number },
+          { label: 'Barang', value: products.find((p) => p.product_id === o.product_id)?.product_name },
+          { label: 'Jumlah dipesan (rencana)', value: `${o.quantity_ordered.toLocaleString('id-ID')} pcs` },
+          { label: 'Tanggal pesanan', value: formatDate(o.order_date) },
+          { label: 'Target kirim', value: formatDate(o.due_date) },
+          { label: 'Dicatat oleh', value: o.created_by },
+        ]}
+        actions={
+          <>
+            <Button size="lg" onClick={() => onViewOrderDetail(o.order_id)} iconRight={<ArrowRight className="w-5 h-5" />}>
+              Lihat detail pesanan
+            </Button>
+            <Button size="lg" variant="secondary" onClick={() => onRecordProduction(o.order_id)} icon={<Factory className="w-5 h-5" />}>
+              Catat produksi
+            </Button>
+            <Button size="lg" variant="quiet" onClick={resetForm} icon={<ClipboardPlus className="w-5 h-5" />}>
+              Catat pesanan lain
+            </Button>
+          </>
+        }
+      />
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onCancel}
-              className="p-1.5 hover:bg-slate-100 rounded-lg text-[#526174] transition-colors"
-              title="Kembali"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#1E293B]">Catat Pesanan Baru</h1>
+    <div className="space-y-6">
+      <PageHeader
+        title="Catat Pesanan Baru"
+        description="Salin data dari dokumen PO mitra. Nomor pesanan dibuat otomatis setelah disimpan."
+        onBack={onCancel}
+        backLabel="Kembali ke daftar pesanan"
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <form onSubmit={handleSubmit} noValidate className="lg:col-span-8 space-y-6" aria-label="Form pesanan baru">
+          <div ref={summaryRef}>
+            <ErrorSummary errors={errors} labels={LABELS} />
           </div>
-          <p className="text-sm md:text-base text-[#526174] mt-1 ml-9">
-            Masukkan data pesanan yang diterima dari mitra perusahaan secara teliti.
-          </p>
-        </div>
-        <div className="hidden sm:block text-right">
-          <span className="text-xs text-[#526174]">ID Pesanan Sistem:</span>
-          <p className="font-mono font-bold text-base text-[#1B365D]">{generatedOrderId}</p>
-        </div>
-      </div>
+          {storageError && (
+            <Notice tone="danger" title="Pesanan belum tersimpan" role="alert">
+              {storageError}
+            </Notice>
+          )}
 
-      {/* Main Layout: Form Card (720px) + Informational Summary (300px) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
-        {/* Form Container (8 cols) */}
-        <div className="lg:col-span-8 bg-white border border-[#D9E0E8] rounded-xl p-6 md:p-8 shadow-xs">
-          <form onSubmit={handlePreSubmit} className="space-y-6">
-            {/* Field 1: Nama Mitra */}
-            <div>
-              <label htmlFor="partner-select" className="block text-base font-semibold text-[#1E293B] mb-2">
-                Nama Mitra Perusahaan <span className="text-[#B42318]">*</span>
-              </label>
-              <select
-                id="partner-select"
-                value={partnerId}
-                onChange={(e) => handlePartnerChange(e.target.value)}
-                className={`w-full h-[56px] px-4 bg-[#F8FAFC] border rounded-lg text-base text-[#1E293B] focus-beesha outline-none cursor-pointer ${
-                  errors.partner_id ? 'border-[#B42318] bg-red-50/20' : 'border-[#D9E0E8]'
-                }`}
-              >
-                <option value="">-- Pilih Nama Mitra --</option>
-                {partners.map((p) => (
-                  <option key={p.partner_id} value={p.partner_id}>
-                    {p.partner_name} ({p.city})
-                  </option>
-                ))}
-              </select>
-              {errors.partner_id ? (
-                <p className="text-xs text-[#B42318] mt-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{errors.partner_id}</span>
-                </p>
-              ) : (
-                <p className="text-xs text-[#526174] mt-1.5">
-                  Pilih mitra terdaftar dari direktori PHM Group.
-                </p>
-              )}
-            </div>
-
-            {/* Field 2: Nomor PO Mitra */}
-            <div>
-              <label htmlFor="po-number" className="block text-base font-semibold text-[#1E293B] mb-2">
-                Nomor PO Mitra <span className="text-[#B42318]">*</span>
-              </label>
-              <input
-                id="po-number"
-                type="text"
-                value={poNumber}
-                onChange={(e) => {
-                  setPoNumber(e.target.value);
-                  if (errors.po_number) setErrors((prev) => ({ ...prev, po_number: '' }));
-                }}
-                placeholder="Contoh: PO-2026-001"
-                className={`w-full h-[56px] px-4 bg-[#F8FAFC] border rounded-lg text-base text-[#1E293B] focus-beesha outline-none font-medium ${
-                  errors.po_number ? 'border-[#B42318] bg-red-50/20' : 'border-[#D9E0E8]'
-                }`}
-              />
-              {errors.po_number ? (
-                <p className="text-xs text-[#B42318] mt-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{errors.po_number}</span>
-                </p>
-              ) : (
-                <p className="text-xs text-[#526174] mt-1.5">
-                  Masukkan nomor pesanan resmi yang tercantum pada dokumen Purchase Order mitra.
-                </p>
-              )}
-            </div>
-
-            {/* Field 3: Nama Barang / Part */}
-            <div>
-              <label htmlFor="product-select" className="block text-base font-semibold text-[#1E293B] mb-2">
-                Nama Barang / Part <span className="text-[#B42318]">*</span>
-              </label>
-              <select
-                id="product-select"
-                value={productId}
-                onChange={(e) => {
-                  setProductId(e.target.value);
-                  if (errors.product_id) setErrors((prev) => ({ ...prev, product_id: '' }));
-                }}
-                className={`w-full h-[56px] px-4 bg-[#F8FAFC] border rounded-lg text-base text-[#1E293B] focus-beesha outline-none cursor-pointer ${
-                  errors.product_id ? 'border-[#B42318] bg-red-50/20' : 'border-[#D9E0E8]'
-                }`}
-              >
-                <option value="">-- Pilih Barang yang Dipesan --</option>
-                {products.map((prd) => (
-                  <option key={prd.product_id} value={prd.product_id}>
-                    {prd.product_name} — Kode: {prd.product_code}
-                  </option>
-                ))}
-              </select>
-              {errors.product_id ? (
-                <p className="text-xs text-[#B42318] mt-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{errors.product_id}</span>
-                </p>
-              ) : (
-                <p className="text-xs text-[#526174] mt-1.5">
-                  Produk part manufaktur dengan cetak biru terverifikasi.
-                </p>
-              )}
-            </div>
-
-            {/* Two-Column: Jumlah Pesanan & Target Pengiriman */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Field 4: Jumlah Pesanan */}
-              <div>
-                <label htmlFor="order-qty" className="block text-base font-semibold text-[#1E293B] mb-2">
-                  Jumlah Pesanan <span className="text-[#B42318]">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    id="order-qty"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={quantity}
+          <Card title="1. Dari siapa pesanannya?">
+            <div className="space-y-6">
+              <Field id="partner_id" label="Nama mitra" required error={errors.partner_id}>
+                {(d) => (
+                  <select
+                    id="partner_id"
+                    aria-describedby={d}
+                    aria-invalid={!!errors.partner_id}
+                    value={partnerId}
                     onChange={(e) => {
-                      setQuantity(e.target.value);
-                      if (errors.quantity_ordered)
-                        setErrors((prev) => ({ ...prev, quantity_ordered: '' }));
+                      setPartnerId(e.target.value);
+                      clearError('partner_id');
+                      clearError('po_number');
+                      const p = partners.find((x) => x.partner_id === e.target.value);
+                      setPicMitra(p?.pic_name ?? '');
                     }}
-                    placeholder="Masukkan jumlah unit"
-                    className={`w-full h-[56px] pl-4 pr-14 bg-[#F8FAFC] border rounded-lg text-base text-[#1E293B] font-semibold tabular-nums focus-beesha outline-none ${
-                      errors.quantity_ordered ? 'border-[#B42318] bg-red-50/20' : 'border-[#D9E0E8]'
-                    }`}
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#526174] pointer-events-none">
-                    pcs
-                  </span>
-                </div>
-                {errors.quantity_ordered ? (
-                  <p className="text-xs text-[#B42318] mt-1.5 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{errors.quantity_ordered}</span>
-                  </p>
-                ) : (
-                  <p className="text-xs text-[#526174] mt-1.5">Satuan standar: pcs (pieces).</p>
+                    className={inputClass(!!errors.partner_id, 'cursor-pointer')}
+                  >
+                    <option value="">Pilih mitra…</option>
+                    {partners.map((p) => (
+                      <option key={p.partner_id} value={p.partner_id}>
+                        {p.partner_name} — {p.city}
+                      </option>
+                    ))}
+                  </select>
                 )}
-              </div>
+              </Field>
 
-              {/* Field 5: Target Pengiriman */}
-              <div>
-                <label htmlFor="due-date" className="block text-base font-semibold text-[#1E293B] mb-2">
-                  Target Pengiriman <span className="text-[#B42318]">*</span>
-                </label>
-                <input
-                  id="due-date"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => {
-                    setDueDate(e.target.value);
-                    if (errors.due_date) setErrors((prev) => ({ ...prev, due_date: '' }));
-                  }}
-                  className={`w-full h-[56px] px-4 bg-[#F8FAFC] border rounded-lg text-base text-[#1E293B] focus-beesha outline-none ${
-                    errors.due_date ? 'border-[#B42318] bg-red-50/20' : 'border-[#D9E0E8]'
-                  }`}
-                />
-                {errors.due_date ? (
-                  <p className="text-xs text-[#B42318] mt-1.5 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{errors.due_date}</span>
-                  </p>
-                ) : (
-                  <p className="text-xs text-[#526174] mt-1.5">Batas waktu serah terima barang ke mitra.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Optional Collapsed Section: Informasi Tambahan */}
-            <div className="pt-2 border-t border-[#D9E0E8]">
-              <button
-                type="button"
-                onClick={() => setShowOptionalFields(!showOptionalFields)}
-                className="flex items-center gap-2 text-sm font-semibold text-[#0077C8] hover:underline cursor-pointer"
-              >
-                {showOptionalFields ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                <span>{showOptionalFields ? 'Sembunyikan Informasi Tambahan' : 'Tambah Catatan & PIC Mitra (Opsional)'}</span>
-              </button>
-
-              {showOptionalFields && (
-                <div className="mt-4 space-y-4 p-4 rounded-lg bg-[#F8FAFC] border border-[#D9E0E8] animate-in fade-in duration-200">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1E293B] mb-1">
-                      Nama PIC Mitra
-                    </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Field
+                  id="po_number"
+                  label="Nomor PO"
+                  required
+                  error={errors.po_number}
+                  hint="Tulis persis seperti di dokumen PO."
+                >
+                  {(d) => (
                     <input
+                      id="po_number"
                       type="text"
-                      value={picMitra}
-                      onChange={(e) => setPicMitra(e.target.value)}
-                      placeholder="Nama penanggung jawab dari mitra"
-                      className="w-full h-12 px-4 bg-white border border-[#D9E0E8] rounded-lg text-sm text-[#1E293B] focus-beesha outline-none"
+                      autoComplete="off"
+                      aria-describedby={d}
+                      aria-invalid={!!errors.po_number}
+                      value={poNumber}
+                      onChange={(e) => {
+                        setPoNumber(e.target.value);
+                        clearError('po_number');
+                      }}
+                      placeholder="Contoh: PO-2026-001"
+                      className={inputClass(!!errors.po_number)}
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#1E293B] mb-1">
-                      Catatan Pesanan Khusus
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Contoh: Pengiriman dibagi dua batch atau permintaan packing kayu"
-                      className="w-full p-3 bg-white border border-[#D9E0E8] rounded-lg text-sm text-[#1E293B] focus-beesha outline-none resize-none"
+                  )}
+                </Field>
+                <Field id="order_date" label="Tanggal pesanan" required error={errors.order_date} hint="Tanggal yang tertera di PO.">
+                  {(d) => (
+                    <input
+                      id="order_date"
+                      type="date"
+                      max={today}
+                      aria-describedby={d}
+                      aria-invalid={!!errors.order_date}
+                      value={orderDate}
+                      onChange={(e) => {
+                        setOrderDate(e.target.value);
+                        clearError('order_date');
+                      }}
+                      className={inputClass(!!errors.order_date)}
                     />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Form Actions */}
-            <div className="pt-6 border-t border-[#D9E0E8] flex flex-col sm:flex-row items-center justify-end gap-4">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="w-full sm:w-auto h-[52px] px-6 bg-white hover:bg-slate-50 text-[#1B365D] border border-[#1B365D] font-semibold text-base rounded-[10px] cursor-pointer transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="w-full sm:w-auto min-w-[180px] h-[52px] px-8 bg-[#0077C8] hover:bg-[#0069b2] active:bg-[#005a99] text-white font-semibold text-base rounded-[10px] shadow-xs cursor-pointer transition-colors focus-beesha"
-              >
-                Simpan Pesanan
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Informational Summary Card (4 cols) */}
-        <div className="lg:col-span-4 bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs space-y-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-[#D9E0E8]">
-            <FileCheck className="w-5 h-5 text-[#0077C8]" />
-            <h3 className="text-lg font-bold text-[#1E293B]">Informasi Pencatatan</h3>
-          </div>
-
-          <div className="space-y-3 text-sm">
-            <div>
-              <span className="text-xs text-[#526174]">No. Pencatatan Otomatis:</span>
-              <p className="font-mono font-bold text-base text-[#1B365D]">{generatedOrderId}</p>
-            </div>
-            <div>
-              <span className="text-xs text-[#526174]">Tanggal Input Sistem:</span>
-              <p className="font-semibold text-[#1E293B]">06 November 2026</p>
-            </div>
-            <div>
-              <span className="text-xs text-[#526174]">Petugas Admin:</span>
-              <p className="font-semibold text-[#1E293B]">Siti Rahma (Admin Pesanan)</p>
-            </div>
-            {selectedProduct && (
-              <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-200">
-                <span className="text-xs font-semibold text-[#0077C8]">Lead Time Standar:</span>
-                <p className="text-xs text-[#1E293B] mt-0.5">
-                  {selectedProduct.standard_lead_time_days} hari kerja produksi
-                </p>
-                <p className="text-[11px] text-[#526174] mt-1">{selectedProduct.specification}</p>
+                  )}
+                </Field>
               </div>
-            )}
-          </div>
+            </div>
+          </Card>
 
-          <div className="p-4 rounded-lg bg-[#F8FAFC] border border-[#D9E0E8] text-xs text-[#526174] leading-relaxed">
-            💡 <strong>Panduan Usability:</strong> Setelah Anda menyimpan pesanan ini, pesanan akan langsung tersedia pada formulir <strong>Catat Hasil Produksi</strong> dan <strong>Catat Pengiriman</strong> tanpa perlu mengetik ulang nomor dan nama mitra.
+          <Card title="2. Apa yang dipesan?">
+            <div className="space-y-6">
+              <Field id="product_id" label="Barang yang dipesan" required error={errors.product_id}>
+                {(d) => (
+                  <select
+                    id="product_id"
+                    aria-describedby={d}
+                    aria-invalid={!!errors.product_id}
+                    value={productId}
+                    onChange={(e) => {
+                      setProductId(e.target.value);
+                      clearError('product_id');
+                    }}
+                    className={inputClass(!!errors.product_id, 'cursor-pointer')}
+                  >
+                    <option value="">Pilih barang…</option>
+                    {products.map((p) => (
+                      <option key={p.product_id} value={p.product_id}>
+                        {p.product_name} ({p.product_code})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Field id="quantity_ordered" label="Jumlah dipesan" required error={errors.quantity_ordered} hint="Angka bulat, satuan pcs.">
+                  {(d) => (
+                    <QtyInput
+                      id="quantity_ordered"
+                      aria-describedby={d}
+                      aria-invalid={!!errors.quantity_ordered}
+                      value={quantity}
+                      hasError={!!errors.quantity_ordered}
+                      onValueChange={(v) => {
+                        setQuantity(v);
+                        clearError('quantity_ordered');
+                      }}
+                      placeholder="0"
+                    />
+                  )}
+                </Field>
+                <Field
+                  id="due_date"
+                  label="Target kirim ke mitra"
+                  required
+                  error={errors.due_date}
+                  hint={
+                    product ? (
+                      <>
+                        Waktu produksi standar {product.product_name}: {product.standard_lead_time_days} hari.{' '}
+                        {dueDate !== suggestedDue && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDueDate(suggestedDue);
+                              clearError('due_date');
+                            }}
+                            className="font-semibold text-brand underline underline-offset-4 cursor-pointer"
+                          >
+                            Pakai {formatDate(suggestedDue)}
+                          </button>
+                        )}
+                      </>
+                    ) : undefined
+                  }
+                >
+                  {(d) => (
+                    <input
+                      id="due_date"
+                      type="date"
+                      min={orderDate || undefined}
+                      aria-describedby={d}
+                      aria-invalid={!!errors.due_date}
+                      value={dueDate}
+                      onChange={(e) => {
+                        setDueDate(e.target.value);
+                        clearError('due_date');
+                      }}
+                      className={inputClass(!!errors.due_date)}
+                    />
+                  )}
+                </Field>
+              </div>
+            </div>
+          </Card>
+
+          <Card title="3. Keterangan tambahan" description="Boleh dikosongkan.">
+            <div className="space-y-6">
+              <Field id="pic_mitra" label="Nama PIC di pihak mitra" hint={partner ? 'Terisi otomatis dari data mitra. Ubah bila berbeda.' : undefined}>
+                {(d) => (
+                  <input
+                    id="pic_mitra"
+                    type="text"
+                    aria-describedby={d}
+                    value={picMitra}
+                    onChange={(e) => setPicMitra(e.target.value)}
+                    className={inputClass(false)}
+                  />
+                )}
+              </Field>
+              <Field id="notes" label="Catatan pesanan">
+                {(d) => (
+                  <textarea
+                    id="notes"
+                    rows={3}
+                    aria-describedby={d}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Mis. dikirim dua tahap, minta packing kayu"
+                    className={inputClass(false, 'py-3 resize-y')}
+                  />
+                )}
+              </Field>
+            </div>
+          </Card>
+
+          <div className="bg-surface border border-line rounded-card p-5 md:p-6 space-y-4">
+            <StaffNotice actor={actor} onRequireStaff={onRequireStaff} />
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+              <Button variant="secondary" size="lg" onClick={onCancel}>
+                Batal
+              </Button>
+              <Button type="submit" size="lg" className="sm:min-w-[220px]">
+                Periksa &amp; Simpan Pesanan
+              </Button>
+            </div>
           </div>
-        </div>
+        </form>
+
+        <aside className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
+          <Card title="Yang perlu disiapkan" as="div">
+            <ul className="space-y-2 text-base text-ink list-disc pl-5">
+              <li>Dokumen PO dari mitra</li>
+              <li>Nama barang &amp; jumlahnya</li>
+              <li>Tanggal kirim yang diminta</li>
+            </ul>
+            <p className="mt-4 text-[15px] text-ink-muted">
+              Setelah disimpan, pesanan langsung bisa dipilih di form Produksi dan Pengiriman — tidak perlu diketik ulang.
+            </p>
+          </Card>
+          {product && (
+            <Card title="Info barang" as="div">
+              <p className="text-base font-semibold text-ink">
+                {product.product_name} <span className="font-mono text-ink-muted">({product.product_code})</span>
+              </p>
+              <p className="mt-1 text-[15px] text-ink-muted">{product.specification}</p>
+            </Card>
+          )}
+        </aside>
       </div>
 
-      {/* Confirmation Modal (Section 9.5) */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-[#D9E0E8] max-w-lg w-full p-6 shadow-2xl animate-in zoom-in-95 duration-150">
-            <h3 className="text-xl font-bold text-[#1E293B]">Konfirmasi Simpan Pesanan</h3>
-            <p className="text-sm text-[#526174] mt-1">
-              Apakah data pesanan berikut sudah benar dan sesuai dengan dokumen PO mitra?
-            </p>
-
-            <div className="mt-5 p-4 rounded-lg bg-[#F8FAFC] border border-[#D9E0E8] space-y-2.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Mitra:</span>
-                <span className="font-semibold text-[#1E293B]">{selectedPartner?.partner_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Nomor PO:</span>
-                <span className="font-semibold text-[#1E293B]">{poNumber}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Nama Barang:</span>
-                <span className="font-semibold text-[#1E293B]">{selectedProduct?.product_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Jumlah Pesanan:</span>
-                <span className="font-bold text-[#0077C8] tabular-nums">{quantity} pcs</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#526174]">Target Pengiriman:</span>
-                <span className="font-semibold text-[#1E293B]">{dueDate}</span>
-              </div>
+      <Dialog
+        open={confirmOpen}
+        title="Periksa sekali lagi"
+        description="Cocokkan dengan dokumen PO sebelum disimpan."
+        onClose={() => !saving && setConfirmOpen(false)}
+        dismissible={!saving}
+        footer={
+          <>
+            <Button variant="secondary" size="lg" onClick={() => setConfirmOpen(false)} disabled={saving}>
+              Ubah lagi
+            </Button>
+            <Button size="lg" onClick={handleSave} loading={saving} loadingText="Menyimpan…" data-autofocus>
+              Ya, Simpan Pesanan
+            </Button>
+          </>
+        }
+      >
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+          {[
+            ['Mitra', partner?.partner_name],
+            ['Nomor PO', poNumber.trim()],
+            ['Tanggal pesanan', formatDate(orderDate)],
+            ['Barang', product?.product_name],
+            ['Jumlah dipesan', `${Number(quantity || 0).toLocaleString('id-ID')} pcs`],
+            ['Target kirim', formatDate(dueDate)],
+          ].map(([k, v]) => (
+            <div key={k}>
+              <dt className="text-sm text-ink-muted">{k}</dt>
+              <dd className="text-[17px] font-semibold text-ink">{v}</dd>
             </div>
-
-            <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-                className="h-12 px-5 bg-white hover:bg-slate-50 text-[#1B365D] border border-[#D9E0E8] font-semibold text-sm rounded-lg cursor-pointer"
-              >
-                Periksa Kembali
-              </button>
-              <button
-                type="button"
-                onClick={handleFinalSubmit}
-                className="h-12 px-6 bg-[#0077C8] hover:bg-[#0069b2] text-white font-semibold text-sm rounded-lg shadow-xs cursor-pointer focus-beesha"
-              >
-                Ya, Simpan Pesanan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          ))}
+        </dl>
+      </Dialog>
     </div>
   );
 };

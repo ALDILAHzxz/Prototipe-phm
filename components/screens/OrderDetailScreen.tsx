@@ -1,20 +1,11 @@
 import React, { useState } from 'react';
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Clock,
-  Truck,
-  Factory,
-  ClipboardPlus,
-  Box,
-  FileText,
-  Calendar,
-  Building2,
-  ChevronRight,
-  Sparkles,
-} from 'lucide-react';
-import { Order, Partner, Product, ProductionRecord, DeliveryRecord, ScreenType } from '../../types';
-import { calculateSingleOrderProgress } from '../../utils/operations';
+import { Factory, Truck, Box, History } from 'lucide-react';
+import { Order, Partner, Product, ProductionRecord, DeliveryRecord } from '../../types';
+import { calculateSingleOrderProgress, getVerificationStatus } from '../../utils/operations';
+import { formatDate, formatDateTime, sortableTime } from '../../lib/format';
+import { PageHeader, Card, KeyValue, ProgressBar, EmptyState, Notice } from '../ui/Layout';
+import { Button } from '../ui/Button';
+import { OrderStatusBadge, VerificationBadge, SyncBadge, SourceBadge } from '../ui/StatusBadge';
 import { ThreePartViewer } from '../ThreePartViewer';
 
 interface OrderDetailScreenProps {
@@ -29,6 +20,10 @@ interface OrderDetailScreenProps {
   onNavigateToDelivery: (orderId: string) => void;
 }
 
+function sourceLabel(s?: string) {
+  return s === 'data_contoh' ? 'Data contoh (demo)' : s === 'form_aplikasi' ? 'Form aplikasi' : 'Tidak diketahui';
+}
+
 export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({
   orderId,
   orders,
@@ -40,310 +35,277 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({
   onNavigateToProduction,
   onNavigateToDelivery,
 }) => {
-  const [show3DViewer, setShow3DViewer] = useState(false);
+  const [show3D, setShow3D] = useState(false);
+  const order = orders.find((o) => o.order_id === orderId);
 
-  const order = orders.find((o) => o.order_id === orderId) || orders[0];
-  if (!order) return null;
+  if (!order) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Pesanan tidak ditemukan" onBack={onBack} backLabel="Kembali ke daftar pesanan" />
+        <Card as="div">
+          <EmptyState
+            title={`Pesanan "${orderId || '-'}" tidak ada`}
+            description="Mungkin nomornya salah, atau data contoh baru saja dikembalikan ke awal."
+            action={<Button onClick={onBack}>Buka daftar pesanan</Button>}
+          />
+        </Card>
+      </div>
+    );
+  }
 
   const partner = partners.find((p) => p.partner_id === order.partner_id);
   const product = products.find((p) => p.product_id === order.product_id);
-
   const progress = calculateSingleOrderProgress(order, productionRecords, deliveryRecords);
+  const prod = productionRecords
+    .filter((r) => r.order_id === order.order_id)
+    .sort((a, b) => sortableTime(b.reported_at) - sortableTime(a.reported_at));
+  const del = deliveryRecords
+    .filter((r) => r.order_id === order.order_id)
+    .sort((a, b) => sortableTime(b.shipped_at) - sortableTime(a.shipped_at));
 
-  const relatedProductions = productionRecords.filter((r) => r.order_id === order.order_id);
-  const relatedDeliveries = deliveryRecords.filter((r) => r.order_id === order.order_id);
+  const producedVerified = prod
+    .filter((r) => getVerificationStatus(r) === 'terverifikasi')
+    .reduce((s, r) => s + r.quantity_completed, 0);
+  const shippedVerified = del
+    .filter((r) => getVerificationStatus(r) === 'terverifikasi')
+    .reduce((s, r) => s + r.quantity_shipped, 0);
+  const pendingCount = [...prod, ...del].filter((r) => getVerificationStatus(r) !== 'terverifikasi').length;
+  const pct = (n: number) => (progress.totalOrdered > 0 ? Math.round((n / progress.totalOrdered) * 100) : 0);
+  const done = progress.computedStatus === 'selesai';
 
   return (
-    <div className="space-y-7 animate-in fade-in duration-200">
-      {/* Top Navigation & Title Bar */}
-      <div className="bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-slate-100 rounded-lg text-[#526174] transition-colors cursor-pointer"
-            title="Kembali ke Daftar Pesanan"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl md:text-3xl font-bold text-[#1E293B] font-mono">
-                {order.order_id}
-              </h1>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-[#0077C8] border border-blue-200">
-                {order.po_number}
-              </span>
-            </div>
-            <p className="text-sm md:text-base text-[#526174] mt-0.5">
-              Mitra: <strong className="text-[#1E293B]">{partner?.partner_name}</strong> ({partner?.city})
-            </p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={`${partner?.partner_name ?? 'Mitra'} — ${product?.product_name ?? 'Barang'}`}
+        description={
+          <>
+            Pesanan <span className="font-mono font-semibold text-ink">{order.order_id}</span> · PO {order.po_number}
+          </>
+        }
+        onBack={onBack}
+        backLabel="Kembali ke daftar pesanan"
+        meta={
+          <>
+            <OrderStatusBadge status={progress.computedStatus} />
+            <SyncBadge syncedAt={order.synced_at} />
+            <SourceBadge source={order.source} />
+          </>
+        }
+        actions={
+          !done && (
+            <>
+              <Button size="lg" onClick={() => onNavigateToProduction(order.order_id)} icon={<Factory className="w-5 h-5" />}>
+                Catat Produksi
+              </Button>
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={() => onNavigateToDelivery(order.order_id)}
+                icon={<Truck className="w-5 h-5" />}
+              >
+                Catat Pengiriman
+              </Button>
+            </>
+          )
+        }
+      />
 
-        {/* Primary Action Buttons for this Order (Section 12.3) */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => setShow3DViewer(!show3DViewer)}
-            className="h-11 px-4 bg-[#F8FAFC] hover:bg-blue-50 text-[#1B365D] border border-[#D9E0E8] rounded-lg font-semibold text-xs md:text-sm flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
-          >
-            <Box className="w-4 h-4 text-[#0077C8]" />
-            <span>{show3DViewer ? 'Tutup 3D Part' : 'Inspeksi 3D Part'}</span>
-          </button>
-
-          <button
-            onClick={() => onNavigateToProduction(order.order_id)}
-            className="h-11 px-4 bg-[#0077C8] hover:bg-[#0069b2] text-white rounded-lg font-semibold text-xs md:text-sm flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs focus-beesha"
-          >
-            <Factory className="w-4 h-4" />
-            <span>Catat Produksi</span>
-          </button>
-
-          <button
-            onClick={() => onNavigateToDelivery(order.order_id)}
-            className="h-11 px-4 bg-[#1B365D] hover:bg-[#152a48] text-white rounded-lg font-semibold text-xs md:text-sm flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs focus-beesha"
-          >
-            <Truck className="w-4 h-4" />
-            <span>Catat Pengiriman</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Interactive 3D Model Inspection Panel (Integrated Three.js Viewer) */}
-      {show3DViewer && (
-        <div className="animate-in fade-in zoom-in-98 duration-200">
-          <ThreePartViewer
-            partName={product?.product_name}
-            partCode={product?.product_code}
-            orderId={order.order_id}
-            onClose={() => setShow3DViewer(false)}
-          />
-        </div>
+      {pendingCount > 0 && (
+        <Notice tone="warning" title={`${pendingCount} catatan belum diperiksa supervisor`}>
+          Angka realisasi di bawah sudah termasuk catatan yang belum diperiksa. Bagian &quot;sudah diperiksa&quot; menunjukkan
+          angka yang sudah dicek.
+        </Notice>
       )}
 
-      {/* Section B: Perkembangan Pesanan (Three-Stage Progress Visualization) */}
-      <div className="bg-white border border-[#D9E0E8] rounded-xl p-6 md:p-8 shadow-xs space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-[#1E293B]">Perkembangan Pesanan</h2>
-          <p className="text-sm text-[#526174] mt-0.5">
-            Tahapan realisasi pesanan mitra dari penerimaan hingga pengiriman tuntas.
-          </p>
-        </div>
-
-        {/* 3-Stage Progress Indicator */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
-          {/* Stage 1: Pesanan Diterima */}
-          <div className="p-4 rounded-xl border border-[#D9E0E8] bg-blue-50/40 relative">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#18794E] text-white flex items-center justify-center font-bold text-sm shrink-0">
-                ✓
-              </div>
-              <div>
-                <p className="text-xs text-[#526174] font-medium">Tahap 1</p>
-                <h4 className="text-base font-bold text-[#1E293B]">Pesanan Diterima</h4>
-              </div>
+      <Card title="Rencana dan realisasi" description="Rencana = jumlah di PO. Realisasi = jumlah dari catatan produksi & pengiriman.">
+        <div className="space-y-6">
+          <div>
+            <div className="flex items-baseline justify-between gap-3 mb-2">
+              <span className="text-base font-semibold">Rencana (dipesan)</span>
+              <span className="text-lg font-bold tabular-nums">{progress.totalOrdered.toLocaleString('id-ID')} pcs</span>
             </div>
-            <p className="text-xs text-[#526174] mt-2.5">
-              Dokumen PO diverifikasi pada {order.order_date}.
+            <ProgressBar value={100} label="Rencana" tone="navy" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 mb-2">
+              <span className="text-base font-semibold">Sudah diproduksi</span>
+              <span className="text-lg font-bold tabular-nums">
+                {progress.totalProduced.toLocaleString('id-ID')} pcs ({progress.productionPercentage}%)
+              </span>
+            </div>
+            <ProgressBar value={progress.productionPercentage} label="Persentase produksi" />
+            <p className="mt-1.5 text-[15px] text-ink-muted">
+              Sudah diperiksa: {producedVerified.toLocaleString('id-ID')} pcs ({pct(producedVerified)}%) · Sisa target:{' '}
+              {progress.remainingProduction.toLocaleString('id-ID')} pcs
             </p>
           </div>
-
-          {/* Stage 2: Produksi Berjalan */}
-          <div
-            className={`p-4 rounded-xl border relative ${
-              progress.totalProduced > 0
-                ? 'border-blue-300 bg-blue-50/50'
-                : 'border-[#D9E0E8] bg-[#F8FAFC]'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                  progress.remainingProduction === 0 && progress.totalProduced > 0
-                    ? 'bg-[#18794E] text-white'
-                    : progress.totalProduced > 0
-                    ? 'bg-[#0077C8] text-white'
-                    : 'bg-slate-200 text-slate-500'
-                }`}
-              >
-                {progress.remainingProduction === 0 && progress.totalProduced > 0 ? '✓' : '2'}
-              </div>
-              <div>
-                <p className="text-xs text-[#526174] font-medium">Tahap 2</p>
-                <h4 className="text-base font-bold text-[#1E293B]">Produksi Berjalan</h4>
-              </div>
+          <div>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 mb-2">
+              <span className="text-base font-semibold">Sudah dikirim</span>
+              <span className="text-lg font-bold tabular-nums">
+                {progress.totalShipped.toLocaleString('id-ID')} pcs ({progress.deliveryPercentage}%)
+              </span>
             </div>
-            <p className="text-xs text-[#526174] mt-2.5">
-              {progress.totalProduced} dari {progress.totalOrdered} pcs (
-              {progress.productionPercentage}%) selesai dibuat.
-            </p>
-          </div>
-
-          {/* Stage 3: Pengiriman */}
-          <div
-            className={`p-4 rounded-xl border relative ${
-              progress.totalShipped >= progress.totalOrdered
-                ? 'border-emerald-300 bg-emerald-50/40'
-                : progress.totalShipped > 0
-                ? 'border-purple-200 bg-purple-50/40'
-                : 'border-[#D9E0E8] bg-[#F8FAFC]'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                  progress.totalShipped >= progress.totalOrdered && progress.totalOrdered > 0
-                    ? 'bg-[#18794E] text-white'
-                    : progress.totalShipped > 0
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-slate-200 text-slate-500'
-                }`}
-              >
-                {progress.totalShipped >= progress.totalOrdered && progress.totalOrdered > 0 ? '✓' : '3'}
-              </div>
-              <div>
-                <p className="text-xs text-[#526174] font-medium">Tahap 3</p>
-                <h4 className="text-base font-bold text-[#1E293B]">Pengiriman Mitra</h4>
-              </div>
-            </div>
-            <p className="text-xs text-[#526174] mt-2.5">
-              {progress.totalShipped} dari {progress.totalOrdered} pcs (
-              {progress.deliveryPercentage}%) telah terkirim.
+            <ProgressBar value={progress.deliveryPercentage} label="Persentase pengiriman" tone="success" />
+            <p className="mt-1.5 text-[15px] text-ink-muted">
+              Sudah diperiksa: {shippedVerified.toLocaleString('id-ID')} pcs ({pct(shippedVerified)}%) · Belum dikirim:{' '}
+              {progress.remainingDelivery.toLocaleString('id-ID')} pcs
             </p>
           </div>
         </div>
+      </Card>
 
-        {/* Cumulative Quantities Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-[#D9E0E8]">
-          <div className="p-4 bg-[#F8FAFC] border border-[#D9E0E8] rounded-xl">
-            <span className="text-xs font-semibold text-[#526174]">Total Dipesan:</span>
-            <p className="text-2xl font-bold text-[#1B365D] tabular-nums mt-1">
-              {progress.totalOrdered.toLocaleString('id-ID')} <span className="text-xs font-normal text-[#526174]">pcs</span>
-            </p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <Card title="Data pesanan" className="lg:col-span-1">
+          <dl className="space-y-4">
+            <KeyValue label="Mitra" value={`${partner?.partner_name ?? '-'} (${partner?.city ?? '-'})`} />
+            <KeyValue label="PIC mitra" value={`${order.pic_mitra || partner?.pic_name || '-'} · ${partner?.phone ?? ''}`} />
+            <KeyValue label="Barang" value={`${product?.product_name ?? '-'} (${product?.product_code ?? '-'})`} />
+            <KeyValue label="Tanggal pesanan" value={formatDate(order.order_date)} />
+            <KeyValue label="Target kirim" value={formatDate(order.due_date)} />
+            {order.notes && <KeyValue label="Catatan" value={order.notes} />}
+          </dl>
+          <div className="mt-5 pt-4 border-t border-line">
+            <h3 className="text-base font-bold flex items-center gap-2">
+              <History className="w-5 h-5 text-navy" aria-hidden /> Asal data
+            </h3>
+            <dl className="mt-3 space-y-3">
+              <KeyValue label="Dicatat oleh" value={order.created_by} />
+              <KeyValue label="Waktu input" value={order.created_at ? formatDateTime(order.created_at) : 'Tidak tercatat'} />
+              <KeyValue label="Sumber" value={sourceLabel(order.source)} />
+            </dl>
           </div>
-          <div className="p-4 bg-[#F8FAFC] border border-[#D9E0E8] rounded-xl">
-            <span className="text-xs font-semibold text-[#526174]">Total Selesai Diproduksi:</span>
-            <p className="text-2xl font-bold text-[#0077C8] tabular-nums mt-1">
-              {progress.totalProduced.toLocaleString('id-ID')} <span className="text-xs font-normal text-[#526174]">pcs</span>
-            </p>
-          </div>
-          <div className="p-4 bg-[#F8FAFC] border border-[#D9E0E8] rounded-xl">
-            <span className="text-xs font-semibold text-[#526174]">Total Sudah Dikirim:</span>
-            <p className="text-2xl font-bold text-[#18794E] tabular-nums mt-1">
-              {progress.totalShipped.toLocaleString('id-ID')} <span className="text-xs font-normal text-[#526174]">pcs</span>
-            </p>
-          </div>
-          <div className="p-4 bg-[#F8FAFC] border border-[#D9E0E8] rounded-xl">
-            <span className="text-xs font-semibold text-[#526174]">Sisa Belum Dikirim:</span>
-            <p className="text-2xl font-bold text-[#B54708] tabular-nums mt-1">
-              {progress.remainingDelivery.toLocaleString('id-ID')} <span className="text-xs font-normal text-[#526174]">pcs</span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Two Columns: Section A (Identitas Pesanan) & Section C (Timeline Riwayat Aktivitas) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7">
-        {/* Section A: Identitas Pesanan (5 cols) */}
-        <div className="lg:col-span-5 bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs space-y-4">
-          <h3 className="text-lg font-bold text-[#1E293B] pb-3 border-b border-[#D9E0E8]">
-            Identitas & Spesifikasi Pesanan
-          </h3>
-
-          <div className="space-y-3.5 text-sm">
-            <div>
-              <span className="text-xs text-[#526174]">Nama Mitra Perusahaan:</span>
-              <p className="font-semibold text-base text-[#1E293B]">{partner?.partner_name}</p>
-              <p className="text-xs text-[#526174] mt-0.5">PIC: {order.pic_mitra || partner?.pic_name} · Telp: {partner?.phone}</p>
+          {product && (
+            <div className="mt-5">
+              <Button variant="quiet" onClick={() => setShow3D((s) => !s)} icon={<Box className="w-5 h-5" />}>
+                {show3D ? 'Tutup model 3D' : 'Lihat model 3D barang'}
+              </Button>
             </div>
+          )}
+        </Card>
 
-            <div>
-              <span className="text-xs text-[#526174]">Barang / Part Manufaktur:</span>
-              <p className="font-semibold text-base text-[#1E293B]">{product?.product_name}</p>
-              <p className="text-xs text-[#526174] font-mono mt-0.5">Kode: {product?.product_code}</p>
-            </div>
-
-            <div>
-              <span className="text-xs text-[#526174]">Spesifikasi Teknis:</span>
-              <p className="text-xs text-[#1E293B] bg-[#F8FAFC] p-2.5 rounded-lg border border-[#D9E0E8] mt-1 leading-relaxed">
-                {product?.specification}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div>
-                <span className="text-xs text-[#526174]">Tanggal Pesanan:</span>
-                <p className="font-semibold text-[#1E293B] mt-0.5">{order.order_date}</p>
-              </div>
-              <div>
-                <span className="text-xs text-[#526174]">Target Pengiriman:</span>
-                <p className="font-semibold text-[#B54708] mt-0.5">{order.due_date}</p>
-              </div>
-            </div>
-
-            {order.notes && (
-              <div className="pt-2">
-                <span className="text-xs text-[#526174]">Catatan Pesanan:</span>
-                <p className="text-xs text-[#1E293B] italic mt-0.5">{order.notes}</p>
-              </div>
+        <div className="lg:col-span-2 space-y-6">
+          <Card title="Catatan produksi" description={`${prod.length} catatan`}>
+            {prod.length === 0 ? (
+              <EmptyState
+                title="Belum ada catatan produksi"
+                action={
+                  !done && (
+                    <Button onClick={() => onNavigateToProduction(order.order_id)} icon={<Factory className="w-5 h-5" />}>
+                      Catat Produksi
+                    </Button>
+                  )
+                }
+              />
+            ) : (
+              <ul className="divide-y divide-line -my-3">
+                {prod.map((r) => (
+                  <li key={r.production_id} className="py-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[17px] font-bold tabular-nums">
+                          {r.quantity_completed.toLocaleString('id-ID')} pcs baik
+                          {!!r.reject_qty && <span className="font-semibold text-warning"> · {r.reject_qty} pcs cacat</span>}
+                        </p>
+                        <p className="text-[15px] text-ink-muted">
+                          {formatDateTime(r.reported_at)} · {r.recorded_by}
+                        </p>
+                      </div>
+                      <VerificationBadge status={getVerificationStatus(r)} />
+                    </div>
+                    {r.notes && <p className="mt-1 text-[15px]">{r.notes}</p>}
+                    <RecordTrail record={r} id={r.production_id} />
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
-        </div>
+          </Card>
 
-        {/* Section C: Riwayat Transaksi Pesanan Ini (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#D9E0E8]">
-            <h3 className="text-lg font-bold text-[#1E293B]">Riwayat Aktivitas Pesanan</h3>
-            <span className="text-xs font-semibold text-[#526174]">
-              {relatedProductions.length + relatedDeliveries.length + 1} Catatan
-            </span>
-          </div>
-
-          <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#D9E0E8]">
-            {/* Initial Order Event */}
-            <div className="relative">
-              <span className="absolute -left-[27px] top-1 w-4 h-4 rounded-full bg-[#1B365D] border-2 border-white ring-2 ring-[#D9E0E8]" />
-              <div className="text-sm">
-                <span className="text-xs text-[#526174] font-medium">{order.order_date}</span>
-                <p className="font-semibold text-[#1E293B] mt-0.5">
-                  Pesanan Baru {order.order_id} ({order.po_number}) dicatat oleh {order.created_by}.
-                </p>
-                <p className="text-xs text-[#526174]">Target pesanan: {order.quantity_ordered} pcs.</p>
-              </div>
-            </div>
-
-            {/* Production Records for this order */}
-            {relatedProductions.map((p) => (
-              <div key={p.production_id} className="relative">
-                <span className="absolute -left-[27px] top-1 w-4 h-4 rounded-full bg-[#0077C8] border-2 border-white ring-2 ring-[#D9E0E8]" />
-                <div className="text-sm">
-                  <span className="text-xs text-[#526174] font-medium">{p.reported_at}</span>
-                  <p className="font-semibold text-[#1E293B] mt-0.5">
-                    Hasil produksi +{p.quantity_completed} pcs dicatat oleh {p.recorded_by}.
-                  </p>
-                  {p.reject_qty ? (
-                    <p className="text-xs text-[#B54708]">Reject: {p.reject_qty} pcs</p>
-                  ) : null}
-                  {p.notes && <p className="text-xs text-[#526174] italic">{p.notes}</p>}
-                </div>
-              </div>
-            ))}
-
-            {/* Delivery Records for this order */}
-            {relatedDeliveries.map((d) => (
-              <div key={d.delivery_id} className="relative">
-                <span className="absolute -left-[27px] top-1 w-4 h-4 rounded-full bg-[#18794E] border-2 border-white ring-2 ring-[#D9E0E8]" />
-                <div className="text-sm">
-                  <span className="text-xs text-[#526174] font-medium">{d.shipped_at}</span>
-                  <p className="font-semibold text-[#1E293B] mt-0.5">
-                    Pengiriman {d.quantity_shipped} pcs diberangkatkan via {d.delivery_note}.
-                  </p>
-                  <p className="text-xs text-[#526174]">Petugas: {d.recorded_by}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <Card title="Riwayat pengiriman" description={`${del.length} pengiriman`}>
+            {del.length === 0 ? (
+              <EmptyState
+                title="Belum ada pengiriman"
+                action={
+                  !done && (
+                    <Button onClick={() => onNavigateToDelivery(order.order_id)} icon={<Truck className="w-5 h-5" />}>
+                      Catat Pengiriman
+                    </Button>
+                  )
+                }
+              />
+            ) : (
+              <ul className="divide-y divide-line -my-3">
+                {del.map((r) => (
+                  <li key={r.delivery_id} className="py-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[17px] font-bold tabular-nums">{r.quantity_shipped.toLocaleString('id-ID')} pcs dikirim</p>
+                        <p className="text-[15px] text-ink-muted">
+                          {formatDateTime(r.shipped_at)} · Surat jalan {r.delivery_note ?? 'belum diisi'} · {r.recorded_by}
+                        </p>
+                      </div>
+                      <VerificationBadge status={getVerificationStatus(r)} />
+                    </div>
+                    {r.notes && <p className="mt-1 text-[15px]">{r.notes}</p>}
+                    <RecordTrail record={r} id={r.delivery_id} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
         </div>
       </div>
+
+      {show3D && product && (
+        <ThreePartViewer partName={product.product_name} partCode={product.product_code} orderId={order.order_id} />
+      )}
     </div>
   );
 };
+
+const FIELD_LABEL: Record<string, string> = {
+  quantity_completed: 'jumlah baik',
+  quantity_shipped: 'jumlah dikirim',
+  reject_qty: 'jumlah cacat',
+  delivery_note: 'surat jalan',
+  notes: 'catatan',
+};
+
+/** Jejak ringkas: nomor catatan, waktu input, pemeriksa, catatan perbaikan, dan riwayat koreksi. */
+function RecordTrail({ record, id }: { record: ProductionRecord | DeliveryRecord; id: string }) {
+  return (
+    <div className="mt-2 text-sm text-ink-muted space-y-1">
+      <p>
+        No. {id}
+        {record.created_at && <> · diinput {formatDateTime(record.created_at)}</>}
+        {record.source === 'data_contoh' && <> · data contoh</>}
+      </p>
+      {record.verified_by && record.verification_status !== 'menunggu_pemeriksaan' && (
+        <p>
+          Diperiksa {record.verified_by}
+          {record.verified_at && <> · {formatDateTime(record.verified_at)}</>}
+        </p>
+      )}
+      {record.verification_status === 'perlu_diperbaiki' && record.verification_note && (
+        <p className="text-danger font-medium">Perlu diperbaiki: {record.verification_note}</p>
+      )}
+      {record.revisions && record.revisions.length > 0 && (
+        <details className="mt-1">
+          <summary className="cursor-pointer font-semibold text-brand min-h-[32px]">
+            Dikoreksi {record.revisions.length} kali — lihat riwayat
+          </summary>
+          <ul className="mt-1 space-y-1 pl-4 list-disc">
+            {record.revisions.map((rv) => (
+              <li key={rv.at}>
+                {formatDateTime(rv.at)} oleh {rv.by}: {rv.reason}.{' '}
+                {Object.entries(rv.changes)
+                  .map(([k, c]) => `${FIELD_LABEL[k] ?? k}: ${c.from ?? '-'} → ${c.to ?? '-'}`)
+                  .join('; ')}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}

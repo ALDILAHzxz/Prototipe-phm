@@ -1,138 +1,118 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Clock, CheckCircle2, ArrowRight, ShieldAlert, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Clock, PackageCheck, CheckCircle2, ChevronRight } from 'lucide-react';
 import { AlertItem, AlertSeverity } from '../../types';
+import { formatDate } from '../../lib/format';
+import { PageHeader, Card, EmptyState, FilterChips } from '../ui/Layout';
+import { Button } from '../ui/Button';
 
 interface AlertCenterScreenProps {
   alerts: AlertItem[];
   onSelectOrder: (orderId: string) => void;
 }
 
+type Filter = AlertSeverity | 'semua';
+
+export const SEVERITY: Record<AlertSeverity, { label: string; cls: string; icon: React.ReactNode; next: string }> = {
+  terlambat: {
+    label: 'Terlambat',
+    cls: 'bg-danger-soft text-danger border-danger/40',
+    icon: <AlertTriangle className="w-4 h-4" aria-hidden />,
+    next: 'Hubungi mitra & atur ulang jadwal kirim.',
+  },
+  mendekati: {
+    label: 'Tenggat dekat',
+    cls: 'bg-warning-soft text-warning border-warning/40',
+    icon: <Clock className="w-4 h-4" aria-hidden />,
+    next: 'Pastikan produksi & pengiriman terjadwal.',
+  },
+  tindakan: {
+    label: 'Siap dikirim',
+    cls: 'bg-info-soft text-info border-info/40',
+    icon: <PackageCheck className="w-4 h-4" aria-hidden />,
+    next: 'Jadwalkan pengiriman barang yang sudah jadi.',
+  },
+  info: {
+    label: 'Info',
+    cls: 'bg-subtle text-ink border-line-field',
+    icon: <CheckCircle2 className="w-4 h-4" aria-hidden />,
+    next: '',
+  },
+};
+
+export function SeverityBadge({ severity }: { severity: AlertSeverity }) {
+  const s = SEVERITY[severity];
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-sm font-semibold ${s.cls}`}>
+      {s.icon}
+      {s.label}
+    </span>
+  );
+}
+
 export const AlertCenterScreen: React.FC<AlertCenterScreenProps> = ({ alerts, onSelectOrder }) => {
-  const [activeTab, setActiveTab] = useState<string>('all');
-
-  const filteredAlerts = alerts.filter((a) => {
-    if (activeTab === 'all') return true;
-    return a.severity === activeTab;
-  });
-
-  const getSeverityBadge = (severity: AlertSeverity) => {
-    switch (severity) {
-      case 'terlambat':
-        return (
-          <span className="px-2.5 py-1 rounded text-xs font-bold bg-red-50 text-[#B42318] border border-red-200">
-            Terlambat
-          </span>
-        );
-      case 'mendekati':
-        return (
-          <span className="px-2.5 py-1 rounded text-xs font-bold bg-amber-50 text-[#B54708] border border-amber-200">
-            Mendekati Tenggat
-          </span>
-        );
-      case 'tindakan':
-        return (
-          <span className="px-2.5 py-1 rounded text-xs font-bold bg-blue-50 text-[#0B63A8] border border-blue-200">
-            Perlu Tindakan
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2.5 py-1 rounded text-xs font-bold bg-slate-50 text-[#526174] border border-slate-200">
-            Informasi
-          </span>
-        );
-    }
-  };
+  const [filter, setFilter] = useState<Filter>('semua');
+  const order: AlertSeverity[] = ['terlambat', 'mendekati', 'tindakan', 'info'];
+  const visible = alerts
+    .filter((a) => filter === 'semua' || a.severity === filter)
+    .sort((a, b) => order.indexOf(a.severity) - order.indexOf(b.severity) || a.due_date.localeCompare(b.due_date));
+  const count = (s: AlertSeverity) => alerts.filter((a) => a.severity === s).length;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-6 h-6 text-[#B54708]" />
-            <h1 className="text-2xl md:text-3xl font-bold text-[#1E293B]">Pusat Peringatan</h1>
-          </div>
-          <p className="text-sm md:text-base text-[#526174] mt-1">
-            Lihat pekerjaan dan pesanan yang memerlukan perhatian operasional segera.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Peringatan"
+        description="Pesanan yang terlambat, mendekati tenggat (3 hari atau kurang), atau barangnya sudah siap dikirim. Dihitung dari tanggal hari ini."
+      />
 
-        <div className="text-xs text-[#526174] bg-[#F8FAFC] border border-[#D9E0E8] px-3.5 py-2 rounded-lg self-start sm:self-auto">
-          Total Peringatan: <strong className="text-[#1E293B]">{alerts.length} item</strong>
-        </div>
-      </div>
+      <Card as="div">
+        <FilterChips<Filter>
+          label="Saring jenis peringatan"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { id: 'semua', label: 'Semua', count: alerts.length },
+            { id: 'terlambat', label: 'Terlambat', count: count('terlambat') },
+            { id: 'mendekati', label: 'Tenggat dekat', count: count('mendekati') },
+            { id: 'tindakan', label: 'Siap dikirim', count: count('tindakan') },
+          ]}
+        />
+      </Card>
 
-      {/* Category Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {[
-          { id: 'all', label: 'Semua Peringatan' },
-          { id: 'terlambat', label: 'Terlambat' },
-          { id: 'mendekati', label: 'Mendekati Tenggat' },
-          { id: 'tindakan', label: 'Perlu Tindakan' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`h-11 px-4 rounded-lg text-xs md:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-              activeTab === tab.id
-                ? 'bg-[#1B365D] text-white shadow-xs'
-                : 'bg-white border border-[#D9E0E8] text-[#526174] hover:bg-slate-50'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Alert Cards Grid (120-160px height, 20-24px padding per Section 14) */}
-      {filteredAlerts.length === 0 ? (
-        <div className="bg-white border border-[#D9E0E8] rounded-xl p-12 text-center shadow-xs">
-          <CheckCircle2 className="w-12 h-12 text-[#18794E] mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-[#1E293B]">Tidak ada peringatan saat ini</h3>
-          <p className="text-sm text-[#526174] mt-1 max-w-md mx-auto">
-            Semua pesanan berada dalam rentang jadwal yang aman dan tidak ada keterlambatan pengiriman.
-          </p>
-        </div>
+      {visible.length === 0 ? (
+        <Card as="div">
+          <EmptyState
+            icon={<CheckCircle2 className="w-10 h-10 text-success" />}
+            title="Tidak ada peringatan"
+            description="Semua pesanan berjalan sesuai jadwal untuk kategori ini."
+          />
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {filteredAlerts.map((alt) => (
-            <div
-              key={alt.id}
-              className="bg-white border border-[#D9E0E8] hover:border-[#0077C8] rounded-xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  {getSeverityBadge(alt.severity)}
-                  <span className="font-mono text-xs font-bold text-[#1B365D]">{alt.order_id}</span>
-                </div>
-
-                <h3 className="text-base md:text-lg font-bold text-[#1E293B] leading-tight">
-                  {alt.title}
-                </h3>
-                <p className="text-xs text-[#526174] mt-1">Mitra: {alt.partner_name}</p>
-
-                <p className="text-xs md:text-sm text-[#1E293B] mt-2.5 leading-relaxed bg-[#F8FAFC] p-3 rounded-lg border border-[#D9E0E8]">
-                  {alt.description}
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {visible.map((a) => (
+            <li key={a.id} className="bg-surface border border-line rounded-card shadow-card p-5 flex flex-col">
+              <div className="flex items-start justify-between gap-3">
+                <SeverityBadge severity={a.severity} />
+                <span className="font-mono text-sm text-ink-muted">{a.order_id}</span>
+              </div>
+              <h2 className="mt-3 text-lg font-bold text-ink">{a.title}</h2>
+              <p className="text-base text-ink-muted">
+                {a.partner_name} · PO {a.po_number}
+              </p>
+              <p className="mt-3 text-base text-ink">{a.description}</p>
+              <p className="mt-1 text-[15px] text-ink-muted">Tenggat: {formatDate(a.due_date)}</p>
+              {SEVERITY[a.severity].next && (
+                <p className="mt-3 text-[15px]">
+                  <strong>Langkah berikutnya:</strong> {SEVERITY[a.severity].next}
                 </p>
+              )}
+              <div className="mt-4 pt-4 border-t border-line">
+                <Button variant="secondary" onClick={() => onSelectOrder(a.order_id)} iconRight={<ChevronRight className="w-5 h-5" />} fullWidth>
+                  Buka pesanan
+                </Button>
               </div>
-
-              <div className="mt-5 pt-3 border-t border-[#D9E0E8] flex items-center justify-between">
-                <div className="text-xs text-[#526174]">
-                  Batas Tenggat: <strong className="text-[#1E293B]">{alt.due_date}</strong>
-                </div>
-
-                <button
-                  onClick={() => onSelectOrder(alt.order_id)}
-                  className="px-4 py-2 bg-[#0077C8] hover:bg-[#0069b2] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer focus-beesha shadow-2xs"
-                >
-                  <span>Tindak Lanjuti</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

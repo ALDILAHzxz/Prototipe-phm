@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { NavigationDrawer } from '@/components/NavigationDrawer';
 import { DashboardScreen } from '@/components/screens/DashboardScreen';
@@ -11,348 +12,393 @@ import { DeliveryForm } from '@/components/screens/DeliveryForm';
 import { OrderDetailScreen } from '@/components/screens/OrderDetailScreen';
 import { ActivityHistoryScreen } from '@/components/screens/ActivityHistoryScreen';
 import { AlertCenterScreen } from '@/components/screens/AlertCenterScreen';
+import { VerificationScreen } from '@/components/screens/VerificationScreen';
 import { ThreePartViewer } from '@/components/ThreePartViewer';
 import { BeeshaAIAssistant } from '@/components/BeeshaAIAssistant';
 import { DesignSystemReference } from '@/components/DesignSystemReference';
-import {
-  INITIAL_PARTNERS,
-  INITIAL_PRODUCTS,
-  INITIAL_ORDERS,
-  INITIAL_PRODUCTION_RECORDS,
-  INITIAL_DELIVERY_RECORDS,
-  INITIAL_ACTIVITIES,
-} from '@/data/mockData';
-import {
-  Order,
-  ProductionRecord,
-  DeliveryRecord,
-  ActivityRecord,
-  ScreenType,
-} from '@/types';
-import { deriveOperationalAlerts } from '@/utils/operations';
-import { BookOpen, Box, CheckCircle } from 'lucide-react';
+import { StaffPicker } from '@/components/StaffPicker';
+import { Dialog } from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
+import { Notice, PageHeader } from '@/components/ui/Layout';
+import { WriteContext } from '@/components/screens/shared';
+import { Route, hashToRoute, routeToHash } from '@/components/navigation';
+import { INITIAL_PARTNERS, INITIAL_PRODUCTS, DEMO_STAFF, staffDisplayName } from '@/data/mockData';
+import { ScreenType } from '@/types';
+import { deriveOperationalAlerts, getVerificationStatus } from '@/utils/operations';
+import { deriveActivities } from '@/lib/activity';
+import { useOperations } from '@/lib/useOperations';
+
+const partners = INITIAL_PARTNERS;
+const products = INITIAL_PRODUCTS;
+
+function sameRoute(a: Route, b: Route) {
+  return a.screen === b.screen && (a.orderId ?? '') === (b.orderId ?? '');
+}
 
 export default function Home() {
-  // Shared Simulated Operational Data Model
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
-  const [productionRecords, setProductionRecords] = useState<ProductionRecord[]>(
-    INITIAL_PRODUCTION_RECORDS
-  );
-  const [deliveryRecords, setDeliveryRecords] = useState<DeliveryRecord[]>(
-    INITIAL_DELIVERY_RECORDS
-  );
-  const [activities, setActivities] = useState<ActivityRecord[]>(INITIAL_ACTIVITIES);
+  const ops = useOperations();
+  const { snapshot } = ops;
 
-  // Navigation State
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>('beranda');
-  const [selectedOrderId, setSelectedOrderId] = useState<string>('DEMO-ORD-001');
-  const [formTargetOrderId, setFormTargetOrderId] = useState<string>('');
+  const [route, setRoute] = useState<Route>({ screen: 'beranda' });
+  const routeRef = useRef(route);
+  routeRef.current = route;
 
-  // Modals & Panels State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const [isDesignSystemOpen, setIsDesignSystemOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isStaffPickerOpen, setIsStaffPickerOpen] = useState(false);
+  const [isResetOpen, setIsResetOpen] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState<Route | null>(null);
 
-  // Derived Operational Alerts (Live evaluated across the shared data model)
-  const alerts = useMemo(() => {
-    return deriveOperationalAlerts(
-      orders,
-      productionRecords,
-      deliveryRecords,
-      INITIAL_PARTNERS,
-      '2026-11-06'
-    );
-  }, [orders, productionRecords, deliveryRecords]);
+  // Penanda form yang belum disimpan (untuk peringatan saat pindah halaman).
+  const dirtyRef = useRef(false);
+  const onDirtyChange = useCallback((d: boolean) => {
+    dirtyRef.current = d;
+  }, []);
 
-  // Handlers for adding new transactions into the unified data model
-  const handleSaveOrder = (newOrder: Order) => {
-    setOrders((prev) => [newOrder, ...prev]);
+  const go = useCallback((next: Route, push = true) => {
+    setRoute(next);
+    const h = routeToHash(next);
+    if (push && window.location.hash !== h) window.history.pushState(null, '', h);
+    window.scrollTo({ top: 0 });
+  }, []);
 
-    // Record activity
-    const partner = INITIAL_PARTNERS.find((p) => p.partner_id === newOrder.partner_id);
-    const product = INITIAL_PRODUCTS.find((p) => p.product_id === newOrder.product_id);
+  const navigateTo = useCallback(
+    (next: Route) => {
+      if (sameRoute(next, routeRef.current)) {
+        window.scrollTo({ top: 0 });
+        return;
+      }
+      if (dirtyRef.current) {
+        setPendingRoute(next);
+        return;
+      }
+      go(next);
+    },
+    [go]
+  );
 
-    const newActivity: ActivityRecord = {
-      activity_id: `ACT-${Date.now().toString().slice(-4)}`,
-      activity_type: 'pesanan',
-      related_order_id: newOrder.order_id,
-      timestamp: 'Baru saja',
-      description: `Pesanan baru ${newOrder.po_number} (${newOrder.quantity_ordered} pcs ${product?.product_name || 'Barang'}) dari ${partner?.partner_name || 'Mitra'} berhasil dicatat.`,
-      recorded_by: newOrder.created_by,
-      status: 'Pesanan Baru',
+  const navigate = useCallback((screen: ScreenType, orderId?: string) => navigateTo({ screen, orderId }), [navigateTo]);
+
+  // Sinkron dengan alamat (#/...) agar tombol Kembali browser dan refresh berfungsi.
+  useEffect(() => {
+    setRoute(hashToRoute(window.location.hash));
+    const onPop = () => {
+      const next = hashToRoute(window.location.hash);
+      if (dirtyRef.current && !sameRoute(next, routeRef.current)) {
+        // Kembalikan alamat, lalu tanyakan dulu.
+        window.history.pushState(null, '', routeToHash(routeRef.current));
+        setPendingRoute(next);
+        return;
+      }
+      setRoute(next);
     };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
-    setActivities((prev) => [newActivity, ...prev]);
-    setSelectedOrderId(newOrder.order_id);
+  const orders = useMemo(() => snapshot?.orders ?? [], [snapshot]);
+  const productionRecords = useMemo(() => snapshot?.productionRecords ?? [], [snapshot]);
+  const deliveryRecords = useMemo(() => snapshot?.deliveryRecords ?? [], [snapshot]);
+
+  const alerts = useMemo(
+    () => deriveOperationalAlerts(orders, productionRecords, deliveryRecords, partners),
+    [orders, productionRecords, deliveryRecords]
+  );
+  const activities = useMemo(
+    () => deriveActivities(orders, productionRecords, deliveryRecords, partners, products),
+    [orders, productionRecords, deliveryRecords]
+  );
+  const verificationQueue = useMemo(
+    () => [...productionRecords, ...deliveryRecords].filter((r) => getVerificationStatus(r) !== 'terverifikasi').length,
+    [productionRecords, deliveryRecords]
+  );
+  const badges: Partial<Record<ScreenType, number>> = {
+    pemeriksaan_data: verificationQueue,
+    pusat_peringatan: alerts.filter((a) => a.severity !== 'tindakan').length,
   };
 
-  const handleSaveProduction = (record: ProductionRecord) => {
-    setProductionRecords((prev) => [record, ...prev]);
-
-    const order = orders.find((o) => o.order_id === record.order_id);
-    const newActivity: ActivityRecord = {
-      activity_id: `ACT-${Date.now().toString().slice(-4)}`,
-      activity_type: 'produksi',
-      related_order_id: record.order_id,
-      timestamp: 'Baru saja',
-      description: `Hasil produksi +${record.quantity_completed} pcs dicatat untuk pesanan ${record.order_id}.`,
-      recorded_by: record.recorded_by,
-      status: 'Hasil Produksi',
-    };
-
-    setActivities((prev) => [newActivity, ...prev]);
+  const write: WriteContext = {
+    repo: ops.repo,
+    apply: ops.apply,
+    actor: ops.activeStaff ? staffDisplayName(ops.activeStaff) : null,
+    onRequireStaff: () => setIsStaffPickerOpen(true),
+    onDirtyChange,
+    storageKind: ops.storageKind,
   };
 
-  const handleSaveDelivery = (record: DeliveryRecord) => {
-    setDeliveryRecords((prev) => [record, ...prev]);
+  const openOrder = (orderId: string) => navigate('detail_pesanan', orderId);
 
-    const newActivity: ActivityRecord = {
-      activity_id: `ACT-${Date.now().toString().slice(-4)}`,
-      activity_type: 'pengiriman',
-      related_order_id: record.order_id,
-      timestamp: 'Baru saja',
-      description: `Pengiriman ${record.quantity_shipped} pcs (Surat Jalan: ${record.delivery_note || record.delivery_id}) diberangkatkan.`,
-      recorded_by: record.recorded_by,
-      status: 'Pengiriman Berhasil',
-    };
-
-    setActivities((prev) => [newActivity, ...prev]);
-  };
-
-  // Quick navigation helpers
-  const handleSelectOrderForDetail = (orderId: string) => {
-    setSelectedOrderId(orderId);
-    setCurrentScreen('detail_pesanan');
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  const renderScreen = () => {
+    if (ops.loadError) {
+      return (
+        <Notice tone="danger" title="Data tidak dapat dimuat" role="alert">
+          {ops.loadError} Coba muat ulang halaman. Bila masih gagal, hubungi admin.
+        </Notice>
+      );
     }
-  };
-
-  const handleNavigateToProductionForOrder = (orderId: string) => {
-    setFormTargetOrderId(orderId);
-    setCurrentScreen('form_produksi');
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!snapshot) {
+      return (
+        <p className="flex items-center gap-3 text-lg text-ink-muted py-16 justify-center" role="status">
+          <Loader2 className="w-6 h-6 animate-spin" aria-hidden /> Memuat data…
+        </p>
+      );
     }
-  };
 
-  const handleNavigateToDeliveryForOrder = (orderId: string) => {
-    setFormTargetOrderId(orderId);
-    setCurrentScreen('form_pengiriman');
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    switch (route.screen) {
+      case 'daftar_pesanan':
+        return (
+          <OrderListScreen
+            orders={orders}
+            partners={partners}
+            products={products}
+            productionRecords={productionRecords}
+            deliveryRecords={deliveryRecords}
+            onAddNewOrder={() => navigate('form_pesanan')}
+            onSelectOrder={openOrder}
+          />
+        );
+      case 'form_pesanan':
+        return (
+          <NewOrderForm
+            {...write}
+            partners={partners}
+            products={products}
+            orders={orders}
+            onCancel={() => navigate('daftar_pesanan')}
+            onViewOrderDetail={openOrder}
+            onRecordProduction={(id) => navigate('form_produksi', id)}
+          />
+        );
+      case 'form_produksi':
+        return (
+          <ProductionForm
+            key={`prd-${route.orderId ?? ''}`}
+            {...write}
+            orders={orders}
+            partners={partners}
+            products={products}
+            productionRecords={productionRecords}
+            deliveryRecords={deliveryRecords}
+            preSelectedOrderId={route.orderId}
+            onCancel={() => navigate('beranda')}
+            onViewOrderDetail={openOrder}
+            onRecordDelivery={(id) => navigate('form_pengiriman', id)}
+          />
+        );
+      case 'form_pengiriman':
+        return (
+          <DeliveryForm
+            key={`krm-${route.orderId ?? ''}`}
+            {...write}
+            orders={orders}
+            partners={partners}
+            products={products}
+            productionRecords={productionRecords}
+            deliveryRecords={deliveryRecords}
+            preSelectedOrderId={route.orderId}
+            onCancel={() => navigate('beranda')}
+            onViewOrderDetail={openOrder}
+          />
+        );
+      case 'detail_pesanan':
+        return (
+          <OrderDetailScreen
+            orderId={route.orderId ?? ''}
+            orders={orders}
+            partners={partners}
+            products={products}
+            productionRecords={productionRecords}
+            deliveryRecords={deliveryRecords}
+            onBack={() => navigate('daftar_pesanan')}
+            onNavigateToProduction={(id) => navigate('form_produksi', id)}
+            onNavigateToDelivery={(id) => navigate('form_pengiriman', id)}
+          />
+        );
+      case 'riwayat_aktivitas':
+        return <ActivityHistoryScreen activities={activities} onSelectOrder={openOrder} />;
+      case 'pemeriksaan_data':
+        return (
+          <VerificationScreen
+            repo={write.repo}
+            apply={write.apply}
+            actor={write.actor}
+            onRequireStaff={write.onRequireStaff}
+            activeStaff={ops.activeStaff}
+            orders={orders}
+            partners={partners}
+            products={products}
+            productionRecords={productionRecords}
+            deliveryRecords={deliveryRecords}
+            onSelectOrder={openOrder}
+          />
+        );
+      case 'pusat_peringatan':
+        return <AlertCenterScreen alerts={alerts} onSelectOrder={openOrder} />;
+      case 'inspeksi_3d':
+        return (
+          <div className="space-y-6">
+            <PageHeader
+              title="Inspeksi 3D Part"
+              description="Model 3D ilustratif untuk membantu mengenali bentuk part. Bukan gambar teknik resmi."
+              onBack={() => navigate('beranda')}
+              backLabel="Kembali ke beranda"
+            />
+            <ThreePartViewer partName="Bracket Komponen A" partCode="BRK-01A" orderId={route.orderId} />
+          </div>
+        );
+      case 'beranda':
+      default:
+        return (
+          <DashboardScreen
+            orders={orders}
+            partners={partners}
+            products={products}
+            productionRecords={productionRecords}
+            deliveryRecords={deliveryRecords}
+            activities={activities}
+            alerts={alerts}
+            updatedAt={snapshot.updated_at}
+            activeStaff={ops.activeStaff}
+            onNavigate={(s) => navigate(s)}
+            onSelectOrderForDetail={openOrder}
+          />
+        );
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F2F4F7] text-[#1E293B] flex flex-col font-sans selection:bg-[#0077C8] selection:text-white">
-      {/* Sticky Top Navbar */}
+    <div className="min-h-screen flex flex-col">
+      <a
+        href="#konten-utama"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[70] focus:bg-surface focus:text-ink focus:px-4 focus:py-3 focus:rounded-field focus:shadow-lg"
+      >
+        Langsung ke konten
+      </a>
+
       <Navbar
         onOpenDrawer={() => setIsDrawerOpen(true)}
         onOpenAssistant={() => setIsAssistantOpen(true)}
-        onNavigateHome={() => setCurrentScreen('beranda')}
-        currentScreen={currentScreen}
+        onOpenStaffPicker={() => setIsStaffPickerOpen(true)}
+        onNavigate={(s) => navigate(s)}
+        currentScreen={route.screen}
+        activeStaff={ops.activeStaff}
+        badges={badges}
       />
 
-      {/* Navigation Drawer Overlay */}
       <NavigationDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        currentScreen={currentScreen}
-        onNavigate={(screen) => {
-          setCurrentScreen(screen);
-          setFormTargetOrderId('');
-          if (typeof window !== 'undefined') {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }
-        }}
-        alertsCount={alerts.length}
+        currentScreen={route.screen}
+        onNavigate={(s) => navigate(s)}
+        badges={badges}
+        activeStaff={ops.activeStaff}
+        onOpenStaffPicker={() => setIsStaffPickerOpen(true)}
+        onOpenAssistant={() => setIsAssistantOpen(true)}
+        onOpenGuide={() => setIsGuideOpen(true)}
+        onResetData={() => setIsResetOpen(true)}
+        storageKind={ops.storageKind}
       />
 
-      {/* Main Page Container (Centered, max-width 1360px) */}
-      <main className="flex-1 w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-        {/* Screen 01: Beranda / Ringkasan Operasional */}
-        {currentScreen === 'beranda' && (
-          <DashboardScreen
-            orders={orders}
-            productionRecords={productionRecords}
-            deliveryRecords={deliveryRecords}
-            activities={activities}
-            alerts={alerts}
-            onNavigate={(screen) => {
-              setCurrentScreen(screen);
-              setFormTargetOrderId('');
-              if (typeof window !== 'undefined') {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }}
-            onSelectOrderForDetail={handleSelectOrderForDetail}
-          />
-        )}
-
-        {/* Screen 03: Daftar Pemesanan Mitra */}
-        {currentScreen === 'daftar_pesanan' && (
-          <OrderListScreen
-            orders={orders}
-            partners={INITIAL_PARTNERS}
-            products={INITIAL_PRODUCTS}
-            productionRecords={productionRecords}
-            deliveryRecords={deliveryRecords}
-            onAddNewOrder={() => {
-              setCurrentScreen('form_pesanan');
-              if (typeof window !== 'undefined') {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }}
-            onSelectOrder={handleSelectOrderForDetail}
-          />
-        )}
-
-        {/* Screen 04: Form Input Pemesanan Baru */}
-        {currentScreen === 'form_pesanan' && (
-          <NewOrderForm
-            partners={INITIAL_PARTNERS}
-            products={INITIAL_PRODUCTS}
-            nextOrderNumber={orders.length + 1}
-            onSaveOrder={handleSaveOrder}
-            onCancel={() => setCurrentScreen('daftar_pesanan')}
-            onViewOrderDetail={handleSelectOrderForDetail}
-          />
-        )}
-
-        {/* Screen 05: Form Input Hasil Produksi */}
-        {currentScreen === 'form_produksi' && (
-          <ProductionForm
-            orders={orders}
-            partners={INITIAL_PARTNERS}
-            products={INITIAL_PRODUCTS}
-            productionRecords={productionRecords}
-            deliveryRecords={deliveryRecords}
-            preSelectedOrderId={formTargetOrderId}
-            onSaveProduction={handleSaveProduction}
-            onCancel={() => setCurrentScreen('beranda')}
-            onViewOrderDetail={handleSelectOrderForDetail}
-          />
-        )}
-
-        {/* Screen 06: Form Input Pengiriman */}
-        {currentScreen === 'form_pengiriman' && (
-          <DeliveryForm
-            orders={orders}
-            partners={INITIAL_PARTNERS}
-            products={INITIAL_PRODUCTS}
-            productionRecords={productionRecords}
-            deliveryRecords={deliveryRecords}
-            preSelectedOrderId={formTargetOrderId}
-            onSaveDelivery={handleSaveDelivery}
-            onCancel={() => setCurrentScreen('beranda')}
-            onViewOrderDetail={handleSelectOrderForDetail}
-          />
-        )}
-
-        {/* Screen 07: Detail Pesanan & Progress */}
-        {currentScreen === 'detail_pesanan' && (
-          <OrderDetailScreen
-            orderId={selectedOrderId}
-            orders={orders}
-            partners={INITIAL_PARTNERS}
-            products={INITIAL_PRODUCTS}
-            productionRecords={productionRecords}
-            deliveryRecords={deliveryRecords}
-            onBack={() => setCurrentScreen('daftar_pesanan')}
-            onNavigateToProduction={handleNavigateToProductionForOrder}
-            onNavigateToDelivery={handleNavigateToDeliveryForOrder}
-          />
-        )}
-
-        {/* Screen 08: Riwayat Aktivitas */}
-        {currentScreen === 'riwayat_aktivitas' && (
-          <ActivityHistoryScreen
-            activities={activities}
-            orders={orders}
-            partners={INITIAL_PARTNERS}
-            onSelectOrder={handleSelectOrderForDetail}
-          />
-        )}
-
-        {/* Screen 09: Pusat Peringatan */}
-        {currentScreen === 'pusat_peringatan' && (
-          <AlertCenterScreen
-            alerts={alerts}
-            onSelectOrder={handleSelectOrderForDetail}
-          />
-        )}
-
-        {/* Screen 10: Three.js 3D Interactive Part Inspection */}
-        {currentScreen === 'inspeksi_3d' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-[#D9E0E8] rounded-xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Box className="w-6 h-6 text-[#0077C8]" />
-                  <h1 className="text-2xl md:text-3xl font-bold text-[#1E293B]">
-                    Inspeksi 3D Part Manufaktur
-                  </h1>
-                </div>
-                <p className="text-sm md:text-base text-[#526174] mt-1">
-                  Model 3D interaktif Three.js berbasis PBR procedural assembly untuk verifikasi visual part PHM Group.
-                </p>
-              </div>
-
-              <button
-                onClick={() => setCurrentScreen('beranda')}
-                className="px-4 py-2 bg-[#F8FAFC] hover:bg-slate-100 text-[#1B365D] border border-[#D9E0E8] rounded-lg text-xs md:text-sm font-semibold transition-colors self-start sm:self-auto cursor-pointer"
-              >
-                Kembali ke Beranda
-              </button>
-            </div>
-
-            <ThreePartViewer
-              partName="Bracket Komponen A (Perakitan Sasis)"
-              partCode="BRK-01A"
-              orderId={selectedOrderId || 'DEMO-ORD-001'}
-            />
-          </div>
-        )}
+      <main id="konten-utama" className="flex-1 w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+        {renderScreen()}
       </main>
 
-      {/* Enterprise Footer */}
-      <footer className="w-full bg-white border-t border-[#D9E0E8] py-6 px-4 sm:px-6 lg:px-8 mt-12">
-        <div className="max-w-[1360px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs md:text-sm text-[#526174]">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-[#1B365D]">BEESHA</span>
-            <span>· Sistem Informasi Operasional PT Putra Hatim Mandiri (PHM Group)</span>
-          </div>
-
-          <div className="flex items-center gap-4">
+      <footer className="w-full bg-surface border-t border-line py-5 px-4 sm:px-6 lg:px-8 mt-12">
+        <div className="max-w-[1360px] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-[15px] text-ink-muted">
+          <p>
+            <strong className="text-navy">BEESHA</strong> · Prototipe sistem operasional PT Putra Hatim Mandiri (PHM Group)
+          </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span>Data contoh · tersimpan di perangkat ini · belum terhubung INDIGO</span>
             <button
-              onClick={() => setIsDesignSystemOpen(true)}
-              className="font-semibold text-[#0077C8] hover:underline flex items-center gap-1.5 cursor-pointer"
+              type="button"
+              onClick={() => navigate('inspeksi_3d')}
+              className="min-h-[44px] font-semibold text-brand underline underline-offset-4 cursor-pointer"
             >
-              <BookOpen className="w-4 h-4" />
-              <span>Panduan Design System & HCI</span>
+              Inspeksi 3D
             </button>
-            <span className="text-slate-300">|</span>
-            <span className="text-xs">Data Simulasi Interaktif</span>
+            <button
+              type="button"
+              onClick={() => setIsGuideOpen(true)}
+              className="min-h-[44px] font-semibold text-brand underline underline-offset-4 cursor-pointer"
+            >
+              Panduan tampilan
+            </button>
           </div>
         </div>
       </footer>
 
-      {/* Beesha AI Assistant Drawer */}
       <BeeshaAIAssistant
         isOpen={isAssistantOpen}
         onClose={() => setIsAssistantOpen(false)}
         orders={orders}
         productionRecords={productionRecords}
         deliveryRecords={deliveryRecords}
-        partners={INITIAL_PARTNERS}
-        products={INITIAL_PRODUCTS}
+        partners={partners}
+        products={products}
       />
 
-      {/* Design System & HCI Reference Modal */}
-      <DesignSystemReference
-        isOpen={isDesignSystemOpen}
-        onClose={() => setIsDesignSystemOpen(false)}
+      <DesignSystemReference isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+
+      <StaffPicker
+        open={isStaffPickerOpen}
+        staff={DEMO_STAFF}
+        active={ops.activeStaff}
+        onSelect={ops.setActiveStaff}
+        onClose={() => setIsStaffPickerOpen(false)}
+      />
+
+      <Dialog
+        open={!!pendingRoute}
+        title="Tinggalkan halaman ini?"
+        description="Isian form belum disimpan dan akan hilang."
+        onClose={() => setPendingRoute(null)}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => {
+                const next = pendingRoute;
+                setPendingRoute(null);
+                dirtyRef.current = false;
+                if (next) go(next);
+              }}
+            >
+              Ya, buang isian
+            </Button>
+            <Button size="lg" onClick={() => setPendingRoute(null)} data-autofocus>
+              Tetap di sini
+            </Button>
+          </>
+        }
+      />
+
+      <Dialog
+        open={isResetOpen}
+        title="Kembalikan data contoh?"
+        description="Semua catatan yang dibuat di perangkat ini akan dihapus dan diganti data contoh awal. Tindakan ini tidak bisa dibatalkan."
+        onClose={() => setIsResetOpen(false)}
+        footer={
+          <>
+            <Button variant="secondary" size="lg" onClick={() => setIsResetOpen(false)} data-autofocus>
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              size="lg"
+              onClick={async () => {
+                await ops.reset();
+                setIsResetOpen(false);
+                dirtyRef.current = false;
+                go({ screen: 'beranda' });
+              }}
+            >
+              Ya, hapus &amp; kembalikan
+            </Button>
+          </>
+        }
       />
     </div>
   );

@@ -13,8 +13,8 @@ export const DesignSystemReference: React.FC<DesignSystemReferenceProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-[#D9E0E8] max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 shadow-2xl animate-in zoom-in-95 duration-200 space-y-8">
+    <div role="dialog" aria-modal="true" aria-label="Panduan tampilan" className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl border border-[#D9E0E8] max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 shadow-2xl space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#D9E0E8]">
           <div>
@@ -29,10 +29,12 @@ export const DesignSystemReference: React.FC<DesignSystemReferenceProps> = ({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-lg hover:bg-slate-100 flex items-center justify-center text-[#526174] cursor-pointer"
+            className="min-h-[48px] px-3 rounded-lg hover:bg-slate-100 flex items-center gap-2 text-base font-semibold text-[#526174] cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden />
+            Tutup
           </button>
         </div>
 
@@ -49,7 +51,7 @@ export const DesignSystemReference: React.FC<DesignSystemReferenceProps> = ({
                 #1B365D
               </div>
               <p className="text-xs font-bold text-[#1E293B]">Primary Navy Blue</p>
-              <p className="text-[11px] text-[#526174]">Navbar, Heading, Kepercayaan</p>
+              <p className="text-sm text-[#526174]">Navbar, Heading, Kepercayaan</p>
             </div>
 
             <div className="p-3.5 rounded-xl border border-[#D9E0E8] bg-white space-y-2">
@@ -57,7 +59,7 @@ export const DesignSystemReference: React.FC<DesignSystemReferenceProps> = ({
                 #0077C8
               </div>
               <p className="text-xs font-bold text-[#1E293B]">Secondary Bright Blue</p>
-              <p className="text-[11px] text-[#526174]">Tombol Utama, Fokus, Aksi</p>
+              <p className="text-sm text-[#526174]">Tombol Utama, Fokus, Aksi</p>
             </div>
 
             <div className="p-3.5 rounded-xl border border-[#D9E0E8] bg-white space-y-2">
@@ -65,7 +67,7 @@ export const DesignSystemReference: React.FC<DesignSystemReferenceProps> = ({
                 #F2F4F7
               </div>
               <p className="text-xs font-bold text-[#1E293B]">Background Soft Silver</p>
-              <p className="text-[11px] text-[#526174]">Latar Belakang Bersih & Tenang</p>
+              <p className="text-sm text-[#526174]">Latar Belakang Bersih & Tenang</p>
             </div>
 
             <div className="p-3.5 rounded-xl border border-[#D9E0E8] bg-white space-y-2">
@@ -73,26 +75,26 @@ export const DesignSystemReference: React.FC<DesignSystemReferenceProps> = ({
                 #1E293B
               </div>
               <p className="text-xs font-bold text-[#1E293B]">Dark Charcoal Text</p>
-              <p className="text-[11px] text-[#526174]">Kontras Tinggi WCAG 4.5:1</p>
+              <p className="text-sm text-[#526174]">Kontras Tinggi WCAG 4.5:1</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
             <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
               <p className="text-xs font-bold text-[#18794E]">Success: #18794E</p>
-              <p className="text-[11px] text-emerald-800 mt-0.5">Produksi selesai & terkirim tuntas</p>
+              <p className="text-sm text-emerald-800 mt-0.5">Produksi selesai & terkirim tuntas</p>
             </div>
             <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
               <p className="text-xs font-bold text-[#B54708]">Warning: #B54708</p>
-              <p className="text-[11px] text-amber-800 mt-0.5">Mendekati tenggat tempo</p>
+              <p className="text-sm text-amber-800 mt-0.5">Mendekati tenggat tempo</p>
             </div>
             <div className="p-3 rounded-lg bg-red-50 border border-red-200">
               <p className="text-xs font-bold text-[#B42318]">Danger: #B42318</p>
-              <p className="text-[11px] text-red-800 mt-0.5">Terlambat / validasi gagal</p>
+              <p className="text-sm text-red-800 mt-0.5">Terlambat / validasi gagal</p>
             </div>
             <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
               <p className="text-xs font-bold text-[#0B63A8]">Informational: #0B63A8</p>
-              <p className="text-[11px] text-blue-800 mt-0.5">Status pesanan baru & petunjuk</p>
+              <p className="text-sm text-blue-800 mt-0.5">Status pesanan baru & petunjuk</p>
             </div>
           </div>
         </div>

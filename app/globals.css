@@ -2,37 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * DESIGN TOKEN — palet warna proyek (sumber: palet wajib BEESHA yang sudah ada
+ * di repository: navy #1B365D, biru #0077C8, silver #F2F4F7, charcoal #1E293B).
+ * Nilai disimpan sebagai kanal RGB agar bisa dipakai Tailwind dengan opacity.
+ * Ganti warna brand cukup di sini.
+ */
 @layer base {
   :root {
-    --color-navy: #1B365D;
-    --color-bright-blue: #0077C8;
-    --color-soft-silver: #F2F4F7;
-    --color-dark-charcoal: #1E293B;
-    --color-card-surface: #FFFFFF;
-    --color-subtle-surface: #F8FAFC;
-    --color-border: #D9E0E8;
-    --color-secondary-text: #526174;
-    --color-disabled-bg: #E5EAF0;
+    --c-navy: 27 54 93;            /* #1B365D  header, judul */
+    --c-navy-strong: 36 66 111;    /* #24426F  hover di atas navy */
+    --c-brand: 0 119 200;          /* #0077C8  tombol utama, tautan, fokus */
+    --c-brand-strong: 0 98 166;    /* #0062A6  hover tombol utama */
+    --c-brand-soft: 235 245 251;   /* #EBF5FB  latar sorotan */
+    --c-canvas: 242 244 247;       /* #F2F4F7  latar halaman */
+    --c-surface: 255 255 255;      /* #FFFFFF  kartu */
+    --c-subtle: 248 250 252;       /* #F8FAFC  latar sekunder */
+    --c-ink: 30 41 59;             /* #1E293B  teks utama */
+    --c-muted: 74 88 106;          /* #4A586A  teks sekunder (kontras ≥ 6:1) */
+    --c-line: 217 224 232;         /* #D9E0E8  garis pemisah */
+    --c-field: 122 136 156;        /* #7A889C  garis input (kontras ≥ 3:1) */
+    --c-success: 24 121 78;        /* #18794E */
+    --c-success-soft: 232 245 238;
+    --c-warning: 158 63 7;         /* #9E3F07 */
+    --c-warning-soft: 254 244 230;
+    --c-danger: 180 35 24;         /* #B42318 */
+    --c-danger-soft: 254 240 239;
+    --c-info: 11 99 168;           /* #0B63A8 */
+    --c-info-soft: 234 243 251;
+  }
 
-    --color-status-success: #18794E;
-    --color-status-warning: #B54708;
-    --color-status-danger: #B42318;
-    --color-status-info: #0B63A8;
+  html {
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
-    background-color: #F2F4F7;
-    color: #1E293B;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: rgb(var(--c-canvas));
+    color: rgb(var(--c-ink));
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
-    padding: 0;
+  }
+
+  /* Fokus keyboard yang jelas di semua elemen interaktif */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid rgb(var(--c-brand));
+    outline-offset: 2px;
+  }
+
+  /* Hilangkan panah spinner pada input angka agar tidak salah klik */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-/* Custom focus ring styling for enterprise accessibility */
+/* Kompatibilitas kelas lama */
 .focus-beesha:focus-visible {
-  outline: 2px solid #0077C8;
+  outline: 3px solid rgb(var(--c-brand));
   outline-offset: 2px;
 }
