@@ -28,7 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full bg-navy text-white shadow-md">
-      <div className="max-w-[1536px] mx-auto h-16 px-3 sm:px-6 flex items-center gap-2 sm:gap-4">
+      <div className="max-w-[1360px] mx-auto h-16 md:h-[72px] px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
         <button
           type="button"
           onClick={onOpenDrawer}

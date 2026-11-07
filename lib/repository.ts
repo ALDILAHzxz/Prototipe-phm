@@ -144,12 +144,16 @@ function isSnapshot(value: unknown): value is OperationsSnapshot {
   );
 }
 
-class BrowserOperationsRepository implements OperationsRepository {
+export class BrowserOperationsRepository implements OperationsRepository {
   storageKind: StorageKind = 'perangkat_ini';
   private memory: OperationsSnapshot | null = null;
 
   constructor() {
     try {
+      if (typeof window === 'undefined' || !window.localStorage) {
+        this.storageKind = 'sementara';
+        return;
+      }
       const probe = '__phm_probe__';
       window.localStorage.setItem(probe, '1');
       window.localStorage.removeItem(probe);
@@ -160,7 +164,7 @@ class BrowserOperationsRepository implements OperationsRepository {
   }
 
   private read(): OperationsSnapshot {
-    if (this.storageKind === 'sementara') {
+    if (this.storageKind === 'sementara' || typeof window === 'undefined' || !window.localStorage) {
       if (!this.memory) this.memory = createSnapshot();
       return this.memory;
     }
@@ -181,7 +185,7 @@ class BrowserOperationsRepository implements OperationsRepository {
 
   /** Melempar error jika gagal menulis; pemanggil mengubahnya menjadi pesan yang jelas. */
   private write(snapshot: OperationsSnapshot) {
-    if (this.storageKind === 'sementara') {
+    if (this.storageKind === 'sementara' || typeof window === 'undefined' || !window.localStorage) {
       this.memory = snapshot;
       return;
     }

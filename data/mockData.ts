@@ -12,7 +12,7 @@ import {
   DeliveryRecord,
   Staff,
 } from '../types';
-import { addDays } from '../lib/format';
+import { addDays, todayISODate } from '../lib/format';
 
 export const INITIAL_PARTNERS: Partner[] = [
   {
@@ -101,7 +101,7 @@ export interface SeedData {
 }
 
 /** Membuat data contoh dengan tanggal relatif terhadap `today` (YYYY-MM-DD). */
-export function createSeedData(today: string): SeedData {
+export function createSeedData(today: string = todayISODate()): SeedData {
   const d = (offset: number) => addDays(today, offset);
   const dt = (offset: number, time: string) => `${d(offset)}T${time}`;
   const seedMeta = (offset: number, time: string) => ({

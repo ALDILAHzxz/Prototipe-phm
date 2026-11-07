@@ -1,9 +1,10 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
 
-/** Kelas dasar semua input agar tinggi, ukuran teks, dan fokus seragam. */
-export function inputClass(hasError?: boolean, extra = ''): string {
-  return `w-full min-h-[52px] px-4 bg-surface border rounded-field text-[17px] text-ink placeholder:text-ink-muted/70 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/30 disabled:bg-subtle disabled:text-ink-muted ${
+/** Kelas dasar semua input agar tinggi, ukuran teks, dan fokus seragam (56px untuk input formulir, 52px untuk pencarian). */
+export function inputClass(hasError?: boolean, extra = '', size: 'md' | 'lg' = 'lg'): string {
+  const minHeight = size === 'lg' ? 'min-h-[56px]' : 'min-h-[52px]';
+  return `w-full ${minHeight} px-4 bg-surface border rounded-[8px] text-[17px] text-ink placeholder:text-ink-muted/70 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/30 disabled:bg-subtle disabled:text-ink-muted ${
     hasError ? 'border-danger ring-1 ring-danger/40' : 'border-line-field'
   } ${extra}`;
 }
