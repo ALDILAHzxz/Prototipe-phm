@@ -1,0 +1,8 @@
+# Ignored by Vercel deployment
+references/
+docs/
+.git
+.github
+*.mp4
+*.pdf
+
