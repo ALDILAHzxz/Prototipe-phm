@@ -2,6 +2,7 @@ import React from 'react';
 import { Menu, MessageCircleQuestion, UserRound } from 'lucide-react';
 import { ScreenType, Staff } from '../types';
 import { NAV_ITEMS, isNavActive, routeToHash } from './navigation';
+import { ThemeToggle } from './ThemeToggle';
 
 interface NavbarProps {
   onOpenDrawer: () => void;
@@ -90,6 +91,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
+
           <button
             type="button"
             onClick={onOpenStaffPicker}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Box } from 'lucide-react';
+import { Loader2, Box, BookOpen } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { NavigationDrawer } from '@/components/NavigationDrawer';
 import { DashboardScreen } from '@/components/screens/DashboardScreen';
@@ -333,11 +333,12 @@ export default function Home() {
               Viewer 3D Part
             </Button>
             <Button
-              variant="quiet"
+              variant="secondary"
               size="sm"
               onClick={() => setIsGuideOpen(true)}
+              icon={<BookOpen className="w-4 h-4 text-brand" />}
             >
-              Panduan Desain
+              Buku Panduan &amp; Tur Sistem
             </Button>
           </div>
         </div>
@@ -353,7 +354,11 @@ export default function Home() {
         products={products}
       />
 
-      <DesignSystemReference isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+      <DesignSystemReference
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        onNavigate={navigate}
+      />
 
       <StaffPicker
         open={isStaffPickerOpen}

@@ -89,7 +89,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     (r) => getVerificationStatus(r) === 'perlu_diperbaiki'
   ).length;
   const late = alerts.filter((a) => a.severity === 'terlambat').length;
-  const usesSample = orders.some((o) => o.source === 'data_contoh');
 
   const metrics = useMemo(
     () => calculateDashboardMetrics(orders, productionRecords, deliveryRecords, pendingVerification + needsFix + late),
@@ -120,13 +119,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           Data terakhir berubah: <strong className="text-ink">{updatedAt ? formatDateTime(updatedAt) : '-'}</strong>
         </p>
       </header>
-
-      {usesSample && (
-        <Notice tone="info" title="Berisi data contoh">
-          Angka di aplikasi ini berasal dari data contoh dan catatan yang Anda input di perangkat ini — bukan data perusahaan
-          sebenarnya, dan belum terhubung ke INDIGO.
-        </Notice>
-      )}
 
       {/* Aksi utama */}
       <section aria-label="Catat data" className="grid grid-cols-1 md:grid-cols-3 gap-4">

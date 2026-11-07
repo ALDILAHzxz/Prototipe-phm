@@ -151,7 +151,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 },
                 { label: 'Inspeksi 3D Part', icon: Box, onClick: () => go('inspeksi_3d') },
                 {
-                  label: 'Panduan Tampilan',
+                  label: 'Buku Panduan & Tur Sistem',
                   icon: BookOpen,
                   onClick: () => {
                     onClose();

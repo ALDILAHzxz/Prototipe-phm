@@ -38,8 +38,41 @@
     --c-info-soft: 234 243 251;
   }
 
+  html.dark, :root[data-theme='dark'] {
+    color-scheme: dark;
+
+    --c-navy: 15 23 42;            /* #0F172A Slate-900 / Deep Navy */
+    --c-navy-strong: 30 41 59;     /* #1E293B Slate-800 */
+    --c-brand: 14 165 233;         /* #0EA5E9 Sky-500 Vibrant Brand Blue */
+    --c-brand-strong: 2 132 199;   /* #0284C7 Sky-600 */
+    --c-brand-soft: 12 44 74;      /* #0C2C4A Brand Highlight on Dark */
+    --c-blue-light: 16 35 60;      /* #10233C */
+    --c-blue-soft: 20 45 78;       /* #142D4E */
+    --c-border-blue: 34 72 122;    /* #22487A */
+    --c-canvas: 11 15 25;          /* #0B0F19 Night Deep Canvas */
+    --c-surface: 20 28 44;         /* #141C2C Elevated Card Surface */
+    --c-subtle: 28 38 58;          /* #1C263A Secondary Surface */
+    --c-ink: 243 246 250;          /* #F3F6FA Pure High-Contrast Text */
+    --c-muted: 156 169 188;        /* #9CA9BC Slate-400 Crisp Secondary Text */
+    --c-line: 38 52 76;            /* #26344C Subtle Card & Divider Border */
+    --c-field: 68 86 114;          /* #445672 Input Field Border */
+    --c-success: 46 195 125;       /* #2EC37D */
+    --c-success-soft: 16 48 35;    /* #103023 */
+    --c-warning: 245 158 11;       /* #F59E0B */
+    --c-warning-soft: 58 36 12;    /* #3A240C */
+    --c-danger: 248 113 113;       /* #F87171 */
+    --c-danger-soft: 60 20 20;     /* #3C1414 */
+    --c-info: 56 189 248;          /* #38BDF8 */
+    --c-info-soft: 14 46 72;       /* #0E2E48 */
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
@@ -51,6 +84,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
+    transition: background-color 300ms ease, color 300ms ease;
   }
 
   /* Fokus keyboard yang jelas di semua elemen interaktif */

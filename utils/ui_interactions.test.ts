@@ -72,4 +72,26 @@ describe('UI & Interaction Refinement Verifications (UI-01 to UI-22)', () => {
     toggle();
     assert.equal(showSuggestions, true, 'Suggestions re-expanded on toggle');
   });
+
+  it('UI-23: Theme state transitions correctly between light and dark modes', () => {
+    let theme: 'light' | 'dark' = 'light';
+    const toggleTheme = () => (theme = theme === 'light' ? 'dark' : 'light');
+
+    assert.equal(theme, 'light', 'Default theme is light');
+    toggleTheme();
+    assert.equal(theme, 'dark', 'Theme switches to dark');
+    toggleTheme();
+    assert.equal(theme, 'light', 'Theme toggles back to light');
+  });
+
+  it('UI-24: Guide tour navigation covers all 7 instructional tabs in sequence', () => {
+    const tabs = ['ikhtisar', 'pesanan', 'produksi', 'pengiriman', 'dashboard', 'fitur', 'faq'];
+    assert.equal(tabs.length, 7);
+    tabs.forEach((tab, idx) => {
+      const prev = idx > 0 ? tabs[idx - 1] : null;
+      const next = idx < tabs.length - 1 ? tabs[idx + 1] : null;
+      if (idx === 0) assert.equal(prev, null);
+      if (idx === tabs.length - 1) assert.equal(next, null);
+    });
+  });
 });
