@@ -176,9 +176,15 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({
             </dl>
           </div>
           {product && (
-            <div className="mt-5">
-              <Button variant="quiet" onClick={() => setShow3D((s) => !s)} icon={<Box className="w-5 h-5" />}>
-                {show3D ? 'Tutup model 3D' : 'Lihat model 3D barang'}
+            <div className="mt-6 pt-4 border-t border-line">
+              <Button
+                variant={show3D ? 'secondary' : 'primary'}
+                size="md"
+                fullWidth
+                onClick={() => setShow3D((s) => !s)}
+                icon={<Box className="w-5 h-5" />}
+              >
+                {show3D ? 'Tutup Model 3D' : 'Lihat Model 3D Komponen'}
               </Button>
             </div>
           )}

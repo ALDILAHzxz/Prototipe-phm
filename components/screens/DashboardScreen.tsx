@@ -8,6 +8,12 @@ import {
   ChevronRight,
   Link2Off,
   Clock,
+  Box,
+  CheckCircle2,
+  Package,
+  Calendar,
+  Layers,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Order, Partner, Product, ProductionRecord, DeliveryRecord, AlertItem, ScreenType, Staff } from '../../types';
 import { calculateDashboardMetrics, calculatePeriodSummary, calculateSingleOrderProgress, getVerificationStatus } from '../../utils/operations';
@@ -125,67 +131,139 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Aksi utama */}
       <section aria-label="Catat data" className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: 'Catat Pesanan', desc: 'Masukkan pesanan baru dari mitra.', icon: ClipboardPlus, screen: 'form_pesanan' as ScreenType },
-          { label: 'Catat Produksi', desc: 'Catat jumlah barang yang selesai dibuat.', icon: Factory, screen: 'form_produksi' as ScreenType },
-          { label: 'Catat Pengiriman', desc: 'Catat barang yang sudah dikirim.', icon: Truck, screen: 'form_pengiriman' as ScreenType },
+          {
+            label: 'Catat Pesanan',
+            desc: 'Masukkan pesanan baru dari mitra.',
+            icon: ClipboardPlus,
+            screen: 'form_pesanan' as ScreenType,
+            accent: 'from-brand to-[#0062A6]',
+          },
+          {
+            label: 'Catat Produksi',
+            desc: 'Catat jumlah barang yang selesai dibuat.',
+            icon: Factory,
+            screen: 'form_produksi' as ScreenType,
+            accent: 'from-brand to-[#0062A6]',
+          },
+          {
+            label: 'Catat Pengiriman',
+            desc: 'Catat barang yang sudah dikirim.',
+            icon: Truck,
+            screen: 'form_pengiriman' as ScreenType,
+            accent: 'from-brand to-[#0062A6]',
+          },
         ].map((a) => (
           <button
             key={a.label}
             type="button"
             onClick={() => onNavigate(a.screen)}
-            className="min-h-[136px] flex flex-col justify-between p-6 rounded-card bg-brand text-white text-left hover:bg-brand-strong shadow-card transition-all cursor-pointer group"
+            className="interactive-card min-h-[148px] flex flex-col justify-between p-6 rounded-card bg-brand bg-gradient-to-br from-brand to-[#005FA3] text-white text-left shadow-card hover:shadow-card-hover transition-all cursor-pointer group border border-brand-strong/30"
           >
             <div className="flex items-center justify-between w-full">
-              <a.icon className="w-8 h-8 shrink-0 text-white" aria-hidden />
-              <span className="text-xs font-bold uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-md text-white group-hover:bg-white group-hover:text-brand transition-colors flex items-center gap-1">
-                Mulai Input <ChevronRight className="w-3.5 h-3.5" aria-hidden />
+              <span className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white backdrop-blur-xs group-hover:bg-white group-hover:text-brand transition-all">
+                <a.icon className="w-6 h-6" aria-hidden />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-wider bg-white/20 px-3 py-1.5 rounded-lg text-white group-hover:bg-white group-hover:text-brand transition-colors flex items-center gap-1.5 shadow-xs">
+                Mulai Input <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" aria-hidden />
               </span>
             </div>
             <div className="mt-4">
-              <span className="block text-xl font-bold">{a.label}</span>
+              <span className="block text-xl md:text-[22px] font-bold tracking-tight">{a.label}</span>
               <span className="block text-[15px] text-white/90 mt-1">{a.desc}</span>
             </div>
           </button>
         ))}
       </section>
 
-      {/* 4 KPI Cards */}
-      <section aria-label="Indikator Kinerja Utama" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-surface border border-line rounded-card shadow-card p-5">
-          <p className="text-base font-semibold text-ink-muted">Pesanan Aktif</p>
-          <p className="mt-2 text-3xl md:text-[36px] font-bold text-navy tabular-nums leading-none">
+      {/* 4 KPI Cards - fully clickable to relevant sections */}
+      <section aria-label="Indikator Kinerja Utama" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <button
+          type="button"
+          onClick={() => onNavigate('daftar_pesanan')}
+          className="interactive-card bg-surface border border-line rounded-card shadow-card p-5 text-left cursor-pointer group hover:border-line-blue"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-base font-semibold text-ink-muted">Pesanan Aktif</span>
+            <span className="w-9 h-9 rounded-lg bg-subtle text-navy flex items-center justify-center group-hover:bg-brand-soft group-hover:text-brand transition-colors">
+              <ClipboardPlus className="w-5 h-5" aria-hidden />
+            </span>
+          </div>
+          <p className="mt-3 text-3xl md:text-[36px] font-bold text-navy tabular-nums leading-none">
             {metrics.activeOrdersCount} <span className="text-base font-semibold text-ink-muted">pesanan</span>
           </p>
-          <p className="mt-2 text-[14px] text-ink-muted">Dalam proses produksi & kirim</p>
-        </div>
+          <p className="mt-2 text-[14px] text-ink-muted flex items-center justify-between">
+            <span>Dalam proses pengerjaan</span>
+            <ArrowUpRight className="w-4 h-4 text-ink-muted opacity-0 group-hover:opacity-100 group-hover:text-brand transition-opacity" />
+          </p>
+        </button>
 
-        <div className="bg-surface border border-line rounded-card shadow-card p-5">
-          <p className="text-base font-semibold text-ink-muted">Produksi Selesai</p>
-          <p className="mt-2 text-3xl md:text-[36px] font-bold text-brand tabular-nums leading-none">
+        <button
+          type="button"
+          onClick={() => onNavigate('riwayat_aktivitas')}
+          className="interactive-card bg-surface border border-line rounded-card shadow-card p-5 text-left cursor-pointer group hover:border-line-blue"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-base font-semibold text-ink-muted">Produksi Selesai</span>
+            <span className="w-9 h-9 rounded-lg bg-subtle text-brand flex items-center justify-center group-hover:bg-brand-soft group-hover:text-brand transition-colors">
+              <Factory className="w-5 h-5" aria-hidden />
+            </span>
+          </div>
+          <p className="mt-3 text-3xl md:text-[36px] font-bold text-brand tabular-nums leading-none">
             {metrics.totalProducedQty.toLocaleString('id-ID')} <span className="text-base font-semibold text-ink-muted">pcs</span>
           </p>
-          <p className="mt-2 text-[14px] text-ink-muted">Tercatat selesai dari rencana</p>
-        </div>
+          <p className="mt-2 text-[14px] text-ink-muted flex items-center justify-between">
+            <span>Tercatat dari target</span>
+            <ArrowUpRight className="w-4 h-4 text-ink-muted opacity-0 group-hover:opacity-100 group-hover:text-brand transition-opacity" />
+          </p>
+        </button>
 
-        <div className="bg-surface border border-line rounded-card shadow-card p-5">
-          <p className="text-base font-semibold text-ink-muted">Total Terkirim</p>
-          <p className="mt-2 text-3xl md:text-[36px] font-bold text-success tabular-nums leading-none">
+        <button
+          type="button"
+          onClick={() => onNavigate('riwayat_aktivitas')}
+          className="interactive-card bg-surface border border-line rounded-card shadow-card p-5 text-left cursor-pointer group hover:border-line-blue"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-base font-semibold text-ink-muted">Total Terkirim</span>
+            <span className="w-9 h-9 rounded-lg bg-subtle text-success flex items-center justify-center group-hover:bg-success-soft group-hover:text-success transition-colors">
+              <Truck className="w-5 h-5" aria-hidden />
+            </span>
+          </div>
+          <p className="mt-3 text-3xl md:text-[36px] font-bold text-success tabular-nums leading-none">
             {metrics.totalShippedQty.toLocaleString('id-ID')} <span className="text-base font-semibold text-ink-muted">pcs</span>
           </p>
-          <p className="mt-2 text-[14px] text-ink-muted">{metrics.overallDeliveryRate}% dari total pesanan</p>
-        </div>
+          <p className="mt-2 text-[14px] text-ink-muted flex items-center justify-between">
+            <span>{metrics.overallDeliveryRate}% dari total pesanan</span>
+            <ArrowUpRight className="w-4 h-4 text-ink-muted opacity-0 group-hover:opacity-100 group-hover:text-success transition-opacity" />
+          </p>
+        </button>
 
-        <div className="bg-surface border border-line rounded-card shadow-card p-5">
-          <p className="text-base font-semibold text-ink-muted">Perlu Perhatian</p>
+        <button
+          type="button"
+          onClick={() => onNavigate(pendingVerification + needsFix > 0 ? 'pemeriksaan_data' : 'pusat_peringatan')}
+          className="interactive-card bg-surface border border-line rounded-card shadow-card p-5 text-left cursor-pointer group hover:border-line-blue"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-base font-semibold text-ink-muted">Perlu Perhatian</span>
+            <span
+              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                metrics.attentionCount > 0 ? 'bg-warning-soft text-warning' : 'bg-success-soft text-success'
+              }`}
+            >
+              <AlertTriangle className="w-5 h-5" aria-hidden />
+            </span>
+          </div>
           <p
-            className={`mt-2 text-3xl md:text-[36px] font-bold tabular-nums leading-none ${
+            className={`mt-3 text-3xl md:text-[36px] font-bold tabular-nums leading-none ${
               metrics.attentionCount > 0 ? 'text-warning' : 'text-success'
             }`}
           >
             {metrics.attentionCount} <span className="text-base font-semibold text-ink-muted">catatan</span>
           </p>
-          <p className="mt-2 text-[14px] text-ink-muted">Pemeriksaan & peringatan</p>
-        </div>
+          <p className="mt-2 text-[14px] text-ink-muted flex items-center justify-between">
+            <span>Pemeriksaan &amp; peringatan</span>
+            <ArrowUpRight className="w-4 h-4 text-ink-muted opacity-0 group-hover:opacity-100 group-hover:text-warning transition-opacity" />
+          </p>
+        </button>
       </section>
 
       {/* Ringkasan Progres Operasional */}
@@ -193,46 +271,55 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         title="Progres Operasional Menyeluruh"
         description="Akumulasi seluruh pesanan aktif dan selesai yang tercatat pada sistem prototipe."
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div className="p-4 rounded-card bg-subtle border border-line">
-            <p className="text-sm text-ink-muted">Dipesan</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-navy">
+            <p className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
+              <Package className="w-4 h-4 text-navy" /> Dipesan
+            </p>
+            <p className="mt-2 text-2xl font-bold tabular-nums text-navy">
               {metrics.totalOrderedQty.toLocaleString('id-ID')} <span className="text-sm font-semibold">pcs</span>
             </p>
+            <p className="text-xs text-ink-muted mt-1">Total PO tercatat</p>
           </div>
           <div className="p-4 rounded-card bg-subtle border border-line">
-            <p className="text-sm text-ink-muted">Selesai Diproduksi</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-brand">
+            <p className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
+              <Factory className="w-4 h-4 text-brand" /> Selesai Diproduksi
+            </p>
+            <p className="mt-2 text-2xl font-bold tabular-nums text-brand">
               {metrics.totalProducedQty.toLocaleString('id-ID')} <span className="text-sm font-semibold">pcs</span>
             </p>
             <p className="text-xs text-ink-muted mt-1">{overallProdRate}% dari rencana</p>
           </div>
           <div className="p-4 rounded-card bg-subtle border border-line">
-            <p className="text-sm text-ink-muted">Terkirim</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-success">
+            <p className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
+              <Truck className="w-4 h-4 text-success" /> Terkirim
+            </p>
+            <p className="mt-2 text-2xl font-bold tabular-nums text-success">
               {metrics.totalShippedQty.toLocaleString('id-ID')} <span className="text-sm font-semibold">pcs</span>
             </p>
             <p className="text-xs text-ink-muted mt-1">{metrics.overallDeliveryRate}% dari rencana</p>
           </div>
           <div className="p-4 rounded-card bg-subtle border border-line">
-            <p className="text-sm text-ink-muted">Sisa Belum Dikirim</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-warning">
+            <p className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-warning" /> Sisa Belum Dikirim
+            </p>
+            <p className="mt-2 text-2xl font-bold tabular-nums text-warning">
               {remainingToShip.toLocaleString('id-ID')} <span className="text-sm font-semibold">pcs</span>
             </p>
             <p className="text-xs text-ink-muted mt-1">Belum diberangkatkan</p>
           </div>
         </div>
-        <div className="space-y-3 pt-2">
+        <div className="space-y-4 pt-2">
           <div>
-            <div className="flex justify-between text-sm mb-1 font-medium">
-              <span>Progres Produksi Menyeluruh</span>
+            <div className="flex justify-between text-sm mb-1 font-semibold">
+              <span className="text-ink">Progres Produksi Menyeluruh</span>
               <span className="tabular-nums font-bold text-brand">{overallProdRate}%</span>
             </div>
             <ProgressBar value={overallProdRate} label="Progres Produksi Menyeluruh" tone="brand" />
           </div>
           <div>
-            <div className="flex justify-between text-sm mb-1 font-medium">
-              <span>Progres Pengiriman Menyeluruh</span>
+            <div className="flex justify-between text-sm mb-1 font-semibold">
+              <span className="text-ink">Progres Pengiriman Menyeluruh</span>
               <span className="tabular-nums font-bold text-success">{metrics.overallDeliveryRate}%</span>
             </div>
             <ProgressBar value={metrics.overallDeliveryRate} label="Progres Pengiriman Menyeluruh" tone="success" />
@@ -240,49 +327,61 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </div>
       </Card>
 
-      {/* Hal yang perlu ditindaklanjuti */}
+      {/* Hal yang perlu ditindaklanjuti - fully clickable cards with clear buttons */}
       <section aria-label="Perlu ditindaklanjuti" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           {
             n: pendingVerification,
             label: 'catatan menunggu pemeriksaan',
-            cta: 'Periksa data',
+            cta: 'Periksa Data',
             screen: 'pemeriksaan_data' as ScreenType,
             icon: ShieldCheck,
             tone: pendingVerification ? 'text-warning' : 'text-success',
+            iconBg: pendingVerification ? 'bg-warning-soft text-warning' : 'bg-success-soft text-success',
           },
           {
             n: needsFix,
             label: 'catatan perlu diperbaiki',
-            cta: 'Lihat catatan',
+            cta: 'Lihat Catatan',
             screen: 'pemeriksaan_data' as ScreenType,
             icon: AlertTriangle,
             tone: needsFix ? 'text-danger' : 'text-success',
+            iconBg: needsFix ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success',
           },
           {
             n: late,
             label: 'pesanan lewat tenggat',
-            cta: 'Lihat peringatan',
+            cta: 'Lihat Peringatan',
             screen: 'pusat_peringatan' as ScreenType,
             icon: Clock,
             tone: late ? 'text-danger' : 'text-success',
+            iconBg: late ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success',
           },
         ].map((x) => (
-          <div key={x.label} className="bg-surface border border-line rounded-card shadow-card p-5 flex flex-col">
-            <p className="flex items-baseline gap-2">
-              <x.icon className={`w-6 h-6 self-center ${x.tone}`} aria-hidden />
-              <span className={`text-3xl font-bold tabular-nums ${x.tone}`}>{x.n}</span>
-              <span className="text-base text-ink">{x.label}</span>
-            </p>
-            <button
-              type="button"
-              onClick={() => onNavigate(x.screen)}
-              className="mt-3 self-start min-h-[44px] inline-flex items-center gap-1 text-base font-semibold text-brand underline underline-offset-4 cursor-pointer"
-            >
-              {x.cta}
-              <ChevronRight className="w-5 h-5" aria-hidden />
-            </button>
-          </div>
+          <button
+            key={x.label}
+            type="button"
+            onClick={() => onNavigate(x.screen)}
+            className="interactive-card bg-surface border border-line rounded-card shadow-card p-5 flex flex-col justify-between text-left cursor-pointer group hover:border-line-blue"
+          >
+            <div>
+              <div className="flex items-center gap-3">
+                <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${x.iconBg}`}>
+                  <x.icon className="w-5 h-5" aria-hidden />
+                </span>
+                <span className={`text-3xl font-bold tabular-nums ${x.tone}`}>{x.n}</span>
+              </div>
+              <p className="mt-3 text-base font-medium text-ink">{x.label}</p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between w-full">
+              <span className="text-[15px] font-semibold text-brand group-hover:text-brand-strong flex items-center gap-1.5">
+                {x.cta} <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" aria-hidden />
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded bg-subtle text-ink-muted border border-line">
+                Buka
+              </span>
+            </div>
+          </button>
         ))}
       </section>
 
@@ -304,23 +403,29 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         }
       >
         <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-4 rounded-card bg-subtle border border-line">
-            <dt className="text-base font-semibold text-ink">Pesanan masuk</dt>
-            <dd className="mt-1 text-[32px] font-bold tabular-nums text-navy leading-none">{summary.ordersInPeriod}</dd>
+          <div className="p-5 rounded-card bg-subtle border border-line">
+            <dt className="text-base font-semibold text-ink flex items-center gap-2">
+              <ClipboardPlus className="w-4 h-4 text-navy" /> Pesanan masuk
+            </dt>
+            <dd className="mt-2 text-[32px] font-bold tabular-nums text-navy leading-none">{summary.ordersInPeriod}</dd>
             <dd className="mt-2 text-[15px] text-ink-muted">Jumlah PO dengan tanggal pesanan di periode ini.</dd>
           </div>
-          <div className="p-4 rounded-card bg-subtle border border-line">
-            <dt className="text-base font-semibold text-ink">Produksi aktual</dt>
-            <dd className="mt-1 text-[32px] font-bold tabular-nums text-info leading-none">
+          <div className="p-5 rounded-card bg-subtle border border-line">
+            <dt className="text-base font-semibold text-ink flex items-center gap-2">
+              <Factory className="w-4 h-4 text-info" /> Produksi aktual
+            </dt>
+            <dd className="mt-2 text-[32px] font-bold tabular-nums text-info leading-none">
               {summary.producedInPeriod.toLocaleString('id-ID')} <span className="text-lg">pcs</span>
             </dd>
             <dd className="mt-2 text-[15px] text-ink-muted">
               Barang baik tercatat. Sudah diperiksa: <strong className="text-ink">{summary.producedVerifiedInPeriod.toLocaleString('id-ID')} pcs</strong>
             </dd>
           </div>
-          <div className="p-4 rounded-card bg-subtle border border-line">
-            <dt className="text-base font-semibold text-ink">Pengiriman aktual</dt>
-            <dd className="mt-1 text-[32px] font-bold tabular-nums text-success leading-none">
+          <div className="p-5 rounded-card bg-subtle border border-line">
+            <dt className="text-base font-semibold text-ink flex items-center gap-2">
+              <Truck className="w-4 h-4 text-success" /> Pengiriman aktual
+            </dt>
+            <dd className="mt-2 text-[32px] font-bold tabular-nums text-success leading-none">
               {summary.shippedInPeriod.toLocaleString('id-ID')} <span className="text-lg">pcs</span>
             </dd>
             <dd className="mt-2 text-[15px] text-ink-muted">
@@ -330,76 +435,80 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </dl>
       </Card>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-        <Card
-          className="xl:col-span-2"
-          title={`Pesanan berjalan (${active.length})`}
-          description="Rencana = jumlah dipesan. Batang menunjukkan realisasi produksi dan pengiriman. Tenggat terdekat di atas."
-          actions={
-            <Button variant="quiet" onClick={() => onNavigate('daftar_pesanan')} iconRight={<ChevronRight className="w-5 h-5" />}>
-              Semua pesanan
-            </Button>
-          }
-        >
-          {active.length === 0 ? (
-            <EmptyState
-              title="Tidak ada pesanan berjalan"
-              description="Semua pesanan sudah selesai dikirim."
-              action={<Button onClick={() => onNavigate('form_pesanan')}>Catat Pesanan Baru</Button>}
-            />
-          ) : (
-            <ul className="divide-y divide-line -my-4">
-              {active.slice(0, 6).map(({ o, p, partner, product }) => (
-                <li key={o.order_id} className="py-4">
-                  <button
-                    type="button"
-                    onClick={() => onSelectOrderForDetail(o.order_id)}
-                    className="w-full text-left rounded-field cursor-pointer group"
-                  >
-                    <span className="flex flex-wrap items-start justify-between gap-2">
-                      <span className="min-w-0">
-                        <span className="block text-[17px] font-bold text-ink group-hover:text-brand group-hover:underline">
-                          {partner?.partner_name}
-                        </span>
-                        <span className="block text-[15px] text-ink-muted">
-                          {product?.product_name} · <span className="font-mono">{o.order_id}</span> · tenggat {formatDate(o.due_date)}
-                        </span>
-                      </span>
-                      <OrderStatusBadge status={p.computedStatus} />
-                    </span>
-                    <span className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <span>
-                        <span className="flex justify-between text-[15px] mb-1">
-                          <span>Diproduksi</span>
-                          <span className="tabular-nums font-semibold">
-                            {p.totalProduced.toLocaleString('id-ID')} / {p.totalOrdered.toLocaleString('id-ID')}
-                          </span>
-                        </span>
-                        <ProgressBar value={p.productionPercentage} label={`Produksi ${o.order_id}`} />
-                      </span>
-                      <span>
-                        <span className="flex justify-between text-[15px] mb-1">
-                          <span>Dikirim</span>
-                          <span className="tabular-nums font-semibold">
-                            {p.totalShipped.toLocaleString('id-ID')} / {p.totalOrdered.toLocaleString('id-ID')}
-                          </span>
-                        </span>
-                        <ProgressBar value={p.deliveryPercentage} label={`Pengiriman ${o.order_id}`} tone="success" />
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        <div className="space-y-6">
+      {/* RESTRUCTURED LOWER DASHBOARD: Balanced 2-column section (NO LARGE EMPTY VOID) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Pesanan berjalan */}
+        <div className="lg:col-span-7 xl:col-span-8">
           <Card
-            title="Peringatan"
+            title={`Pesanan berjalan (${active.length})`}
+            description="Rencana = jumlah dipesan. Batang menunjukkan realisasi produksi dan pengiriman. Tenggat terdekat di atas."
+            actions={
+              <Button variant="secondary" size="sm" onClick={() => onNavigate('daftar_pesanan')} iconRight={<ChevronRight className="w-4 h-4" />}>
+                Lihat Semua ({active.length})
+              </Button>
+            }
+          >
+            {active.length === 0 ? (
+              <EmptyState
+                title="Tidak ada pesanan berjalan"
+                description="Semua pesanan sudah selesai dikirim."
+                action={<Button onClick={() => onNavigate('form_pesanan')}>Catat Pesanan Baru</Button>}
+              />
+            ) : (
+              <ul className="divide-y divide-line -my-4">
+                {active.slice(0, 5).map(({ o, p, partner, product }) => (
+                  <li key={o.order_id} className="py-4">
+                    <button
+                      type="button"
+                      onClick={() => onSelectOrderForDetail(o.order_id)}
+                      className="w-full text-left rounded-field cursor-pointer group p-2 -m-2 hover:bg-subtle transition-colors"
+                    >
+                      <span className="flex flex-wrap items-start justify-between gap-2">
+                        <span className="min-w-0">
+                          <span className="block text-[17px] font-bold text-ink group-hover:text-brand transition-colors">
+                            {partner?.partner_name}
+                          </span>
+                          <span className="block text-[15px] text-ink-muted">
+                            {product?.product_name} · <span className="font-mono">{o.order_id}</span> · tenggat {formatDate(o.due_date)}
+                          </span>
+                        </span>
+                        <OrderStatusBadge status={p.computedStatus} />
+                      </span>
+                      <span className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <span>
+                          <span className="flex justify-between text-[15px] mb-1">
+                            <span>Diproduksi</span>
+                            <span className="tabular-nums font-semibold">
+                              {p.totalProduced.toLocaleString('id-ID')} / {p.totalOrdered.toLocaleString('id-ID')}
+                            </span>
+                          </span>
+                          <ProgressBar value={p.productionPercentage} label={`Produksi ${o.order_id}`} />
+                        </span>
+                        <span>
+                          <span className="flex justify-between text-[15px] mb-1">
+                            <span>Dikirim</span>
+                            <span className="tabular-nums font-semibold">
+                              {p.totalShipped.toLocaleString('id-ID')} / {p.totalOrdered.toLocaleString('id-ID')}
+                            </span>
+                          </span>
+                          <ProgressBar value={p.deliveryPercentage} label={`Pengiriman ${o.order_id}`} tone="success" />
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+
+        {/* Right Column: Peringatan & Status Integrasi (Balanced height) */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-6">
+          <Card
+            title="Peringatan Operasional"
             actions={
               alerts.length > 0 && (
-                <Button variant="quiet" onClick={() => onNavigate('pusat_peringatan')}>
+                <Button variant="secondary" size="sm" onClick={() => onNavigate('pusat_peringatan')}>
                   Semua ({alerts.length})
                 </Button>
               )
@@ -409,16 +518,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <p className="text-base text-ink-muted">Tidak ada pesanan yang terlambat atau mendekati tenggat.</p>
             ) : (
               <ul className="space-y-3">
-                {alerts.slice(0, 4).map((a) => (
+                {alerts.slice(0, 3).map((a) => (
                   <li key={a.id}>
                     <button
                       type="button"
                       onClick={() => onSelectOrderForDetail(a.order_id)}
-                      className="w-full text-left p-3 rounded-field border border-line hover:bg-subtle cursor-pointer"
+                      className="w-full text-left p-3.5 rounded-field border border-line hover:bg-subtle hover:border-line-blue transition-colors cursor-pointer group"
                     >
                       <SeverityBadge severity={a.severity} />
-                      <span className="block mt-2 text-base font-semibold text-ink">{a.partner_name}</span>
-                      <span className="block text-[15px] text-ink-muted">{a.description}</span>
+                      <span className="block mt-2 text-base font-semibold text-ink group-hover:text-brand transition-colors">{a.partner_name}</span>
+                      <span className="block text-[14px] text-ink-muted">{a.description}</span>
                     </button>
                   </li>
                 ))}
@@ -426,42 +535,94 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             )}
           </Card>
 
-          <Card
-            title="Catatan terbaru"
-            actions={
-              <Button variant="quiet" onClick={() => onNavigate('riwayat_aktivitas')}>
-                Riwayat
-              </Button>
-            }
-          >
-            <ul className="space-y-4">
-              {activities.slice(0, 5).map((a) => (
-                <li key={a.activity_id} className="text-[15px]">
-                  <p className="text-sm text-ink-muted">{formatDateTime(a.timestamp)}</p>
-                  <p className="text-ink">{a.description}</p>
-                  <p className="text-sm text-ink-muted">Oleh {a.recorded_by}</p>
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          <Card title="Status integrasi">
+          <Card title="Status Integrasi Sistem">
             <ul className="space-y-3 text-[15px]">
               {['INDIGO (ERP)', 'BHEESA (AI pimpinan)'].map((n) => (
-                <li key={n} className="flex items-start gap-3">
+                <li key={n} className="flex items-start gap-3 p-2.5 rounded-field bg-subtle border border-line">
                   <Link2Off className="w-5 h-5 text-ink-muted shrink-0 mt-0.5" aria-hidden />
                   <span>
-                    <strong>{n}:</strong> belum terhubung. Data belum dikirim ke sistem ini.
+                    <strong className="text-navy">{n}:</strong> belum terhubung. Data belum dikirim ke server pusat.
                   </span>
                 </li>
               ))}
             </ul>
             <p className="mt-3 text-sm text-ink-muted">
-              Data disimpan di browser perangkat ini. Kontrak data untuk integrasi ada di dokumen docs/INTEGRASI.md.
+              Data disimpan di peramban perangkat ini. Kontrak integrasi lengkap tercatat di <span className="font-mono text-navy">docs/INTEGRASI.md</span>.
             </p>
           </Card>
         </div>
       </div>
+
+      {/* FEATURE CARD: Inspeksi 3D Part & Perakitan (Screenshot 4 & Final Reference) */}
+      <section
+        aria-label="Inspeksi 3D Part & Perakitan"
+        className="interactive-card rounded-card bg-navy text-white p-6 md:p-8 shadow-card flex flex-col md:flex-row md:items-center md:justify-between gap-6 border border-navy-strong"
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 text-brand-soft shadow-inner">
+            <Box className="w-8 h-8 text-white" aria-hidden />
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-xl md:text-2xl font-bold tracking-tight">Inspeksi 3D Part &amp; Perakitan</h2>
+              <span className="px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded-full bg-brand/40 text-white border border-brand/50">
+                Three.js Interactive
+              </span>
+            </div>
+            <p className="mt-1.5 text-base text-white/85 max-w-2xl leading-relaxed">
+              Tinjau model dan detail komponen manufaktur presisi secara interaktif (rotasi 360°, zoom, kontrol wireframe, dan dimensi komponen).
+            </p>
+          </div>
+        </div>
+        <div className="shrink-0 flex items-center gap-3">
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => onNavigate('inspeksi_3d')}
+            icon={<Box className="w-5 h-5" />}
+            className="bg-brand hover:bg-brand-strong text-white font-bold shadow-md min-w-[220px]"
+          >
+            Buka Viewer 3D Part
+          </Button>
+        </div>
+      </section>
+
+      {/* FULL-WIDTH SECTION: Catatan Aktivitas Terbaru */}
+      <Card
+        title="Catatan Aktivitas Terbaru"
+        description="Linimasa mutasi transaksi operasional terkini yang tercatat pada sistem."
+        actions={
+          <Button variant="secondary" size="sm" onClick={() => onNavigate('riwayat_aktivitas')} iconRight={<ChevronRight className="w-4 h-4" />}>
+            Buka Semua Riwayat ({activities.length})
+          </Button>
+        }
+      >
+        <div className="divide-y divide-line -my-4">
+          {activities.slice(0, 5).map((a) => (
+            <div key={a.activity_id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-start gap-3">
+                <span className="w-8 h-8 rounded-lg bg-subtle text-navy flex items-center justify-center shrink-0 mt-0.5">
+                  {a.activity_type === 'pesanan' && <ClipboardPlus className="w-4 h-4 text-brand" />}
+                  {a.activity_type === 'produksi' && <Factory className="w-4 h-4 text-navy" />}
+                  {a.activity_type === 'pengiriman' && <Truck className="w-4 h-4 text-success" />}
+                  {a.activity_type === 'pemeriksaan' && <ShieldCheck className="w-4 h-4 text-warning" />}
+                </span>
+                <div>
+                  <p className="text-base font-semibold text-ink">{a.description}</p>
+                  <p className="text-sm text-ink-muted">
+                    {formatDateTime(a.timestamp)} · Oleh <strong className="text-ink">{a.recorded_by}</strong>
+                  </p>
+                </div>
+              </div>
+              <div className="self-start sm:self-center shrink-0">
+                <Button variant="quiet" size="sm" onClick={() => onSelectOrderForDetail(a.related_order_id)}>
+                  <span className="font-mono text-sm">{a.related_order_id}</span>
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 };

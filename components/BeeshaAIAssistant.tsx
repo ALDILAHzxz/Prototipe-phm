@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Send, Loader2, Bot, Calculator } from 'lucide-react';
+import { X, Send, Loader2, Bot, Calculator, ChevronDown, ChevronUp, Sparkles, MessageSquare } from 'lucide-react';
 import { Order, ProductionRecord, DeliveryRecord, Partner, Product } from '../types';
 import { calculateSingleOrderProgress, generateBeeshaAIResponse, getVerificationStatus } from '../utils/operations';
 import { ORDER_STATUS_LABEL } from './ui/StatusBadge';
@@ -45,6 +45,7 @@ export const BeeshaAIAssistant: React.FC<BeeshaAIAssistantProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -95,6 +96,7 @@ ${lines.join('\n')}`;
   const handleSend = async (text: string) => {
     const prompt = text.trim();
     if (!prompt || isLoading) return;
+    setShowSuggestions(false);
     setMessages((prev) => [...prev, { sender: 'user', text: prompt }]);
     setInputValue('');
     setIsLoading(true);
@@ -132,53 +134,73 @@ ${lines.join('\n')}`;
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="judul-tanya-beesha">
       <div onClick={onClose} className="absolute inset-0 bg-ink/60" aria-hidden />
 
-      <div className="absolute inset-y-0 right-0 w-full sm:w-[460px] bg-surface shadow-2xl flex flex-col">
-        <div className="h-16 bg-navy text-white px-4 flex items-center justify-between shrink-0">
-          <h2 id="judul-tanya-beesha" className="font-bold text-lg">
-            Tanya Beesha
-          </h2>
+      <div className="absolute inset-y-0 right-0 w-full sm:w-[480px] bg-surface shadow-2xl flex flex-col border-l border-line">
+        <div className="h-16 bg-navy text-white px-5 flex items-center justify-between shrink-0 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-white font-bold text-sm">
+              <Bot className="w-5 h-5" />
+            </span>
+            <div>
+              <h2 id="judul-tanya-beesha" className="font-bold text-lg leading-tight">
+                Tanya Beesha
+              </h2>
+              <span className="text-xs text-white/75 font-normal">Asisten Analitik Operasional PHM</span>
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[48px] px-3 flex items-center gap-2 rounded-field hover:bg-navy-strong text-base font-semibold cursor-pointer"
+            className="min-h-[44px] px-3 flex items-center gap-1.5 rounded-field hover:bg-navy-strong text-[15px] font-semibold cursor-pointer transition-colors"
           >
             <X className="w-5 h-5" aria-hidden />
             Tutup
           </button>
         </div>
 
-        <div className="px-4 py-3 bg-subtle border-b border-line text-[15px] text-ink" role="status">
+        <div className="px-4 py-2.5 bg-subtle border-b border-line text-[14px] text-ink" role="status">
           {aiConfigured === null && 'Memeriksa ketersediaan Gemini AI…'}
-          {aiConfigured === true && 'Jawaban dibuat oleh Gemini AI dari data di aplikasi ini. Periksa kembali angka penting.'}
-          {aiConfigured === false &&
-            'Gemini AI belum terhubung. Jawaban dihitung otomatis dari data aplikasi untuk pertanyaan umum.'}
-          <span className="block text-sm text-ink-muted mt-1">Belum terhubung ke AI BHEESA.</span>
+          {aiConfigured === true && (
+            <span className="text-navy font-medium">Jawaban dianalisis oleh Gemini AI dari data di aplikasi ini.</span>
+          )}
+          {aiConfigured === false && (
+            <span className="text-ink">Gemini AI belum terpasang. Jawaban dihitung otomatis dari data aplikasi lokal.</span>
+          )}
+          <span className="block text-xs text-ink-muted mt-0.5">Simulasi prototipe · Belum terhubung ke server live BHEESA/INDIGO.</span>
         </div>
 
-        <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4" aria-live="polite">
+        {/* Conversation Area with max space */}
+        <div ref={listRef} className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4" aria-live="polite">
           {messages.length === 0 && (
-            <p className="text-base text-ink-muted">
-              Tanyakan ringkasan pesanan, produksi, atau pengiriman. Pilih salah satu pertanyaan di bawah untuk mulai.
-            </p>
+            <div className="p-4 rounded-card bg-subtle border border-line text-center my-6 space-y-2">
+              <div className="w-12 h-12 rounded-full bg-brand-soft text-brand mx-auto flex items-center justify-center">
+                <MessageSquare className="w-6 h-6" />
+              </div>
+              <p className="text-base font-semibold text-ink">Ada yang bisa dibantu?</p>
+              <p className="text-sm text-ink-muted max-w-xs mx-auto">
+                Tanyakan ringkasan pesanan aktif, target produksi hari ini, atau pengiriman barang yang sudah siap.
+              </p>
+            </div>
           )}
           {messages.map((m, idx) => (
             <div key={idx} className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}>
               <div
-                className={`max-w-[90%] p-3.5 rounded-card text-base leading-relaxed whitespace-pre-line ${
-                  m.sender === 'user' ? 'bg-brand text-white' : 'bg-subtle text-ink border border-line'
+                className={`max-w-[88%] p-4 rounded-2xl text-[16px] leading-[1.55] whitespace-pre-line shadow-xs ${
+                  m.sender === 'user'
+                    ? 'bg-brand text-white rounded-tr-xs'
+                    : 'bg-subtle text-ink border border-line rounded-tl-xs'
                 }`}
               >
                 {m.text}
               </div>
               {m.sender === 'assistant' && (
-                <span className="mt-1 text-sm text-ink-muted flex items-center gap-1.5">
+                <span className="mt-1 text-xs text-ink-muted flex items-center gap-1.5 px-1">
                   {m.source === 'gemini' ? (
                     <>
-                      <Bot className="w-4 h-4" aria-hidden /> Sumber: Gemini AI
+                      <Bot className="w-3.5 h-3.5 text-brand" aria-hidden /> Sumber: Gemini AI
                     </>
                   ) : (
                     <>
-                      <Calculator className="w-4 h-4" aria-hidden /> Sumber: hitungan otomatis aplikasi
+                      <Calculator className="w-3.5 h-3.5 text-navy" aria-hidden /> Sumber: Hitungan Otomatis Lokal
                       {m.note && ` (${m.note})`}
                     </>
                   )}
@@ -187,31 +209,56 @@ ${lines.join('\n')}`;
             </div>
           ))}
           {isLoading && (
-            <p className="flex items-center gap-2 text-base text-ink-muted">
-              <Loader2 className="w-5 h-5 animate-spin" aria-hidden /> Sedang menyiapkan jawaban…
-            </p>
+            <div className="p-3.5 rounded-2xl bg-subtle border border-line inline-flex items-center gap-2.5 text-[15px] text-ink">
+              <Loader2 className="w-4 h-4 animate-spin text-brand" aria-hidden /> Sedang menyiapkan analisis data…
+            </div>
           )}
         </div>
 
-        <div className="p-3 bg-subtle border-t border-line">
-          <p className="text-sm font-semibold text-ink-muted mb-2">Pertanyaan cepat</p>
-          <div className="flex flex-wrap gap-2">
-            {quickQuestions.map((q) => (
-              <button
-                key={q}
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleSend(q)}
-                className="min-h-[44px] text-[15px] bg-surface hover:bg-brand-soft text-ink border border-line-field rounded-field px-3 text-left cursor-pointer disabled:opacity-50"
-              >
-                {q}
-              </button>
-            ))}
+        {/* Collapsible Recommended Questions (Pertanyaan Cepat) */}
+        <div className="bg-subtle border-t border-line transition-all duration-200">
+          <div className="px-4 py-2.5 flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-brand" /> Pertanyaan Cepat
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowSuggestions((prev) => !prev)}
+              className="text-xs font-semibold text-brand hover:text-brand-strong px-2 py-1 rounded hover:bg-brand-soft flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              {showSuggestions ? (
+                <>
+                  <span>Sembunyikan</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </>
+              ) : (
+                <>
+                  <span>Tampilkan</span>
+                  <ChevronUp className="w-3.5 h-3.5" />
+                </>
+              )}
+            </button>
           </div>
+          {showSuggestions && (
+            <div className="px-4 pb-3 pt-1 flex flex-wrap gap-2 transition-all duration-200">
+              {quickQuestions.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => handleSend(q)}
+                  className="min-h-[40px] text-[14px] bg-surface hover:bg-brand-soft hover:border-brand/40 text-ink border border-line-field rounded-field px-3 py-1.5 text-left cursor-pointer transition-colors shadow-xs disabled:opacity-50"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* Input Message Composer */}
         <form
-          className="p-3 border-t border-line bg-surface flex items-center gap-2"
+          className="p-3.5 border-t border-line bg-surface flex items-center gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             handleSend(inputValue);
@@ -228,16 +275,16 @@ ${lines.join('\n')}`;
             maxLength={1000}
             onChange={(e) => setInputValue(e.target.value)}
             disabled={isLoading}
-            placeholder="Tulis pertanyaan…"
-            className="flex-1 min-h-[52px] px-4 bg-surface border border-line-field rounded-field text-base outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 disabled:opacity-60"
+            placeholder="Tanyakan status pesanan, produksi, kirim…"
+            className="flex-1 min-h-[52px] px-4 bg-surface border border-line-field rounded-field text-base outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 disabled:opacity-60 shadow-xs"
           />
           <button
             type="submit"
             disabled={!inputValue.trim() || isLoading}
-            className="min-h-[52px] px-4 bg-brand hover:bg-brand-strong disabled:opacity-50 text-white rounded-field flex items-center gap-2 font-semibold cursor-pointer"
+            className="interactive-button min-h-[52px] px-5 bg-brand hover:bg-brand-strong disabled:opacity-50 text-white rounded-field flex items-center gap-2 font-semibold cursor-pointer shadow-xs disabled:cursor-not-allowed"
           >
             <Send className="w-5 h-5" aria-hidden />
-            Kirim
+            <span>Kirim</span>
           </button>
         </form>
       </div>

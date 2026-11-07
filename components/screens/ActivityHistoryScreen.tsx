@@ -14,18 +14,30 @@ interface ActivityHistoryScreenProps {
 
 type Filter = ActivityType | 'semua';
 
-const ICON: Record<ActivityType, React.ReactNode> = {
-  pesanan: <ClipboardList className="w-5 h-5" aria-hidden />,
-  produksi: <Factory className="w-5 h-5" aria-hidden />,
-  pengiriman: <Truck className="w-5 h-5" aria-hidden />,
-  pemeriksaan: <ShieldCheck className="w-5 h-5" aria-hidden />,
+const ICON_CONFIG: Record<ActivityType, { icon: React.ReactNode; bg: string }> = {
+  pesanan: {
+    icon: <ClipboardList className="w-5 h-5" aria-hidden />,
+    bg: 'bg-brand-soft text-brand border-brand/30',
+  },
+  produksi: {
+    icon: <Factory className="w-5 h-5" aria-hidden />,
+    bg: 'bg-[#EBF1FA] text-navy border-navy/20',
+  },
+  pengiriman: {
+    icon: <Truck className="w-5 h-5" aria-hidden />,
+    bg: 'bg-success-soft text-success border-success/30',
+  },
+  pemeriksaan: {
+    icon: <ShieldCheck className="w-5 h-5" aria-hidden />,
+    bg: 'bg-warning-soft text-warning border-warning/30',
+  },
 };
 
 const TYPE_LABEL: Record<ActivityType, string> = {
-  pesanan: 'Pesanan',
-  produksi: 'Produksi',
-  pengiriman: 'Pengiriman',
-  pemeriksaan: 'Pemeriksaan',
+  pesanan: 'Pesanan Mitra',
+  produksi: 'Hasil Produksi',
+  pengiriman: 'Pengiriman Logistik',
+  pemeriksaan: 'Pemeriksaan Supervisor',
 };
 
 export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ activities, onSelectOrder }) => {
@@ -108,31 +120,66 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ ac
         <div className="space-y-6">
           {groups.map(([day, items]) => (
             <section key={day} aria-label={`Catatan ${day}`}>
-              <h2 className="text-lg font-bold text-ink mb-3">{day}</h2>
-              <ul className="bg-surface border border-line rounded-card shadow-card divide-y divide-line">
-                {items.map((a) => (
-                  <li key={a.activity_id} className="p-4 md:p-5 flex gap-4">
-                    <span className="w-10 h-10 rounded-lg bg-canvas text-navy flex items-center justify-center shrink-0">
-                      {ICON[a.activity_type]}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-ink-muted">
-                        {TYPE_LABEL[a.activity_type]} · {formatDateTime(a.timestamp)}
-                      </p>
-                      <p className="text-base md:text-[17px] text-ink font-medium mt-0.5">{a.description}</p>
-                      <p className="mt-1 text-[15px] text-ink-muted">
-                        Oleh {a.recorded_by}
-                        {a.input_at && a.activity_type !== 'pesanan' && <> · diinput {formatDateTime(a.input_at)}</>}
-                        {a.source === 'data_contoh' && <> · data contoh</>}
-                      </p>
-                    </div>
-                    <div className="shrink-0 self-center">
-                      <Button variant="quiet" onClick={() => onSelectOrder(a.related_order_id)}>
-                        <span className="font-mono">{a.related_order_id}</span>
-                      </Button>
-                    </div>
-                  </li>
-                ))}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-brand" aria-hidden />
+                <h2 className="text-lg font-bold text-navy">{day}</h2>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-subtle border border-line text-ink-muted">
+                  {items.length} aktivitas
+                </span>
+              </div>
+              <ul className="bg-surface border border-line rounded-card shadow-card divide-y divide-line overflow-hidden">
+                {items.map((a) => {
+                  const cfg = ICON_CONFIG[a.activity_type];
+                  return (
+                    <li
+                      key={a.activity_id}
+                      className="p-4 md:p-5 flex items-start gap-4 hover:bg-subtle/60 transition-colors group"
+                    >
+                      <span className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 shadow-xs ${cfg.bg}`}>
+                        {cfg.icon}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+                            {TYPE_LABEL[a.activity_type]}
+                          </span>
+                          <span className="text-xs text-ink-muted">·</span>
+                          <span className="text-xs text-ink-muted font-medium">
+                            {formatDateTime(a.timestamp)}
+                          </span>
+                        </div>
+                        <p className="text-base md:text-[17px] text-ink font-semibold mt-1 leading-snug group-hover:text-brand transition-colors">
+                          {a.description}
+                        </p>
+                        <p className="mt-1.5 text-sm text-ink-muted flex items-center gap-2 flex-wrap">
+                          <span>
+                            Oleh: <strong className="text-ink font-medium">{a.recorded_by}</strong>
+                          </span>
+                          {a.input_at && a.activity_type !== 'pesanan' && (
+                            <>
+                              <span>·</span>
+                              <span>Diinput: {formatDateTime(a.input_at)}</span>
+                            </>
+                          )}
+                          {a.source === 'data_contoh' && (
+                            <span className="px-1.5 py-0.5 rounded bg-subtle text-xs text-ink-muted border border-line">
+                              Data contoh
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="shrink-0 self-center">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onSelectOrder(a.related_order_id)}
+                        >
+                          <span className="font-mono text-sm">{a.related_order_id}</span>
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))}

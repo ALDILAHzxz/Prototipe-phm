@@ -24,7 +24,7 @@ export function PageHeader({
           <button
             type="button"
             onClick={onBack}
-            className="mb-3 -ml-2 min-h-[44px] px-2 inline-flex items-center gap-2 rounded-field text-[15px] font-semibold text-brand hover:bg-brand-soft cursor-pointer"
+            className="mb-3 inline-flex items-center gap-2 px-3.5 py-1.5 min-h-[40px] rounded-field text-[15px] font-semibold bg-surface border border-line-field text-navy hover:bg-subtle hover:border-navy/40 shadow-xs transition-all active:scale-[0.985] cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" aria-hidden />
             {backLabel}
@@ -168,14 +168,14 @@ export function ProgressBar({
   const v = Math.max(0, Math.min(100, value));
   return (
     <div
-      className="h-3 w-full rounded-full bg-line overflow-hidden"
+      className="h-3.5 w-full rounded-full bg-line overflow-hidden p-0.5"
       role="progressbar"
       aria-valuenow={v}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label}
     >
-      <div className={`h-full ${color} rounded-full`} style={{ width: `${v}%` }} />
+      <div className={`h-full ${color} rounded-full transition-all duration-300 ease-out`} style={{ width: `${v}%` }} />
     </div>
   );
 }
@@ -202,13 +202,15 @@ export function FilterChips<T extends string>({
             type="button"
             aria-pressed={active}
             onClick={() => onChange(o.id)}
-            className={`min-h-[44px] px-4 rounded-field border text-[15px] font-semibold cursor-pointer transition-colors ${
-              active ? 'bg-navy text-white border-navy' : 'bg-surface text-ink border-line-field hover:bg-subtle'
+            className={`min-h-[44px] px-4 rounded-field border text-[15px] font-semibold cursor-pointer transition-all duration-150 active:scale-[0.985] shadow-xs ${
+              active
+                ? 'bg-navy text-white border-navy shadow-sm'
+                : 'bg-surface text-ink border-line-field hover:bg-subtle hover:border-navy/40'
             }`}
           >
             {o.label}
             {typeof o.count === 'number' && (
-              <span className={`ml-2 tabular-nums ${active ? 'text-white/85' : 'text-ink-muted'}`}>({o.count})</span>
+              <span className={`ml-2 tabular-nums font-bold ${active ? 'text-white/90' : 'text-ink-muted'}`}>({o.count})</span>
             )}
           </button>
         );

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, ClipboardPlus, Factory } from 'lucide-react';
+import { ArrowRight, ClipboardPlus, Factory, ChevronDown, ChevronUp, HelpCircle, Info } from 'lucide-react';
 import { Partner, Product, Order } from '../../types';
 import { validateOrderInput } from '../../utils/operations';
 import { addDays, formatDate, todayISODate } from '../../lib/format';
@@ -59,6 +59,7 @@ export const NewOrderForm: React.FC<NewOrderFormProps> = ({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<{ order: Order; duplicate?: boolean } | null>(null);
+  const [mobileGuideOpen, setMobileGuideOpen] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
 
   const dirty = !saved && !!(partnerId || poNumber || productId || quantity || dueDate || notes);
@@ -394,25 +395,52 @@ export const NewOrderForm: React.FC<NewOrderFormProps> = ({
           </div>
         </form>
 
-        <aside className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
-          <Card title="Yang perlu disiapkan" as="div">
-            <ul className="space-y-2 text-base text-ink list-disc pl-5">
-              <li>Dokumen PO dari mitra</li>
-              <li>Nama barang &amp; jumlahnya</li>
-              <li>Tanggal kirim yang diminta</li>
-            </ul>
-            <p className="mt-4 text-[15px] text-ink-muted">
-              Setelah disimpan, pesanan langsung bisa dipilih di form Produksi dan Pengiriman — tidak perlu diketik ulang.
-            </p>
-          </Card>
-          {product && (
-            <Card title="Info barang" as="div">
-              <p className="text-base font-semibold text-ink">
-                {product.product_name} <span className="font-mono text-ink-muted">({product.product_code})</span>
-              </p>
-              <p className="mt-1 text-[15px] text-ink-muted">{product.specification}</p>
-            </Card>
-          )}
+        {/* Sidebar Petunjuk Pengisian: Sticky on Desktop, Collapsible on Mobile */}
+        <aside className="lg:col-span-4 space-y-4 lg:sticky lg:top-[calc(var(--navbar-height,72px)+24px)]">
+          {/* Mobile Toggle Button */}
+          <div className="lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileGuideOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between p-3.5 rounded-card bg-brand-soft border border-brand/20 text-brand font-semibold text-[15px] cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-brand" />
+                <span>Petunjuk Pengisian Dokumen PO</span>
+              </span>
+              {mobileGuideOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+          </div>
+
+          {/* Guidance Cards: always visible on desktop, conditionally on mobile */}
+          <div className={`${mobileGuideOpen ? 'block' : 'hidden'} lg:block space-y-4 transition-all duration-200`}>
+            <div className="bg-surface border border-brand/30 rounded-card shadow-card p-5 md:p-6 bg-gradient-to-b from-brand-soft/40 to-surface">
+              <h2 className="text-lg font-bold text-navy flex items-center gap-2">
+                <Info className="w-5 h-5 text-brand" /> Yang perlu disiapkan
+              </h2>
+              <ul className="mt-3 space-y-2 text-base text-ink list-disc pl-5 leading-relaxed">
+                <li>Dokumen fisik PO dari mitra</li>
+                <li>Nama barang manufaktur &amp; jumlah (pcs)</li>
+                <li>Target tanggal kirim yang diminta mitra</li>
+              </ul>
+              <div className="mt-4 pt-3 border-t border-line/60 text-[14px] text-ink-muted">
+                Setelah disimpan, pesanan langsung otomatis aktif dan dapat dipilih di form Produksi dan Pengiriman.
+              </div>
+            </div>
+
+            {product && (
+              <div className="bg-surface border border-line rounded-card shadow-card p-5">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-ink-muted">Spesifikasi Komponen</h3>
+                <p className="mt-2 text-base font-bold text-navy">
+                  {product.product_name} <span className="font-mono text-sm text-ink-muted">({product.product_code})</span>
+                </p>
+                <p className="mt-1 text-[15px] text-ink leading-relaxed">{product.specification}</p>
+                <p className="mt-2 text-xs font-semibold text-brand">
+                  Waktu produksi standar: {product.standard_lead_time_days} hari kerja
+                </p>
+              </div>
+            )}
+          </div>
         </aside>
       </div>
 

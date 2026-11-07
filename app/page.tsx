@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Box } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { NavigationDrawer } from '@/components/NavigationDrawer';
 import { DashboardScreen } from '@/components/screens/DashboardScreen';
@@ -304,27 +304,41 @@ export default function Home() {
         {renderScreen()}
       </main>
 
-      <footer className="w-full bg-surface border-t border-line py-5 px-4 sm:px-6 lg:px-8 mt-12">
-        <div className="max-w-[1360px] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-[15px] text-ink-muted">
-          <p>
-            <strong className="text-navy">BEESHA</strong> · Prototipe sistem operasional PT Putra Hatim Mandiri (PHM Group)
-          </p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span>Data contoh · tersimpan di perangkat ini · belum terhubung INDIGO</span>
-            <button
-              type="button"
+      <footer className="w-full bg-surface border-t border-line py-6 px-4 sm:px-6 lg:px-8 mt-12 shadow-xs">
+        <div className="max-w-[1360px] mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 text-[15px] text-ink-muted">
+          <div className="flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg bg-navy text-white flex items-center justify-center font-bold text-sm tracking-wider">
+              PHM
+            </span>
+            <div>
+              <p className="font-semibold text-ink">
+                <strong className="text-navy font-bold">BEESHA</strong> — Sistem Informasi Operasional
+              </p>
+              <p className="text-xs text-ink-muted">PT Putra Hatim Mandiri (PHM Group) · Prototipe Manufaktur</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-subtle border border-line text-xs font-medium text-ink-muted">
+            <span className="w-2 h-2 rounded-full bg-warning animate-pulse" aria-hidden />
+            <span>Data Simulasi Lokal · Penyimpanan Perangkat (localStorage) · Belum Terhubung INDIGO</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => navigate('inspeksi_3d')}
-              className="min-h-[44px] font-semibold text-brand underline underline-offset-4 cursor-pointer"
+              icon={<Box className="w-4 h-4 text-brand" />}
             >
-              Inspeksi 3D
-            </button>
-            <button
-              type="button"
+              Viewer 3D Part
+            </Button>
+            <Button
+              variant="quiet"
+              size="sm"
               onClick={() => setIsGuideOpen(true)}
-              className="min-h-[44px] font-semibold text-brand underline underline-offset-4 cursor-pointer"
             >
-              Panduan tampilan
-            </button>
+              Panduan Desain
+            </Button>
           </div>
         </div>
       </footer>

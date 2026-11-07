@@ -88,30 +88,57 @@ export const AlertCenterScreen: React.FC<AlertCenterScreenProps> = ({ alerts, on
         </Card>
       ) : (
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {visible.map((a) => (
-            <li key={a.id} className="bg-surface border border-line rounded-card shadow-card p-5 flex flex-col">
-              <div className="flex items-start justify-between gap-3">
-                <SeverityBadge severity={a.severity} />
-                <span className="font-mono text-sm text-ink-muted">{a.order_id}</span>
-              </div>
-              <h2 className="mt-3 text-lg font-bold text-ink">{a.title}</h2>
-              <p className="text-base text-ink-muted">
-                {a.partner_name} · PO {a.po_number}
-              </p>
-              <p className="mt-3 text-base text-ink">{a.description}</p>
-              <p className="mt-1 text-[15px] text-ink-muted">Tenggat: {formatDate(a.due_date)}</p>
-              {SEVERITY[a.severity].next && (
-                <p className="mt-3 text-[15px]">
-                  <strong>Langkah berikutnya:</strong> {SEVERITY[a.severity].next}
-                </p>
-              )}
-              <div className="mt-4 pt-4 border-t border-line">
-                <Button variant="secondary" onClick={() => onSelectOrder(a.order_id)} iconRight={<ChevronRight className="w-5 h-5" />} fullWidth>
-                  Buka pesanan
-                </Button>
-              </div>
-            </li>
-          ))}
+          {visible.map((a) => {
+            const borderAccent =
+              a.severity === 'terlambat'
+                ? 'border-l-4 border-l-danger'
+                : a.severity === 'mendekati'
+                ? 'border-l-4 border-l-warning'
+                : a.severity === 'tindakan'
+                ? 'border-l-4 border-l-info'
+                : 'border-l-4 border-l-line-field';
+
+            return (
+              <li
+                key={a.id}
+                className={`interactive-card bg-surface border border-line rounded-card shadow-card p-5 md:p-6 flex flex-col justify-between hover:border-line-blue hover:shadow-card-hover transition-all ${borderAccent}`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <SeverityBadge severity={a.severity} />
+                    <span className="font-mono text-sm font-bold text-navy px-2 py-0.5 rounded bg-subtle border border-line">
+                      {a.order_id}
+                    </span>
+                  </div>
+                  <h2 className="mt-3 text-lg md:text-xl font-bold text-ink leading-snug">{a.title}</h2>
+                  <p className="mt-1 text-base font-medium text-ink-muted">
+                    {a.partner_name} · <span className="font-mono text-ink">PO {a.po_number}</span>
+                  </p>
+                  <p className="mt-3 text-base text-ink leading-relaxed">{a.description}</p>
+                  <p className="mt-2 text-sm text-ink-muted">
+                    Target tenggat kirim: <strong className="text-ink font-semibold">{formatDate(a.due_date)}</strong>
+                  </p>
+                  {SEVERITY[a.severity].next && (
+                    <div className="mt-4 p-3 rounded-field bg-subtle border border-line text-[14px]">
+                      <strong className="text-navy font-semibold">Tindakan disarankan:</strong>{' '}
+                      <span className="text-ink">{SEVERITY[a.severity].next}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-5 pt-4 border-t border-line/60">
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => onSelectOrder(a.order_id)}
+                    iconRight={<ChevronRight className="w-5 h-5" />}
+                    fullWidth
+                  >
+                    Buka Detail Pesanan
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

@@ -5,7 +5,7 @@
 [![React 19](https://img.shields.io/badge/React-19.0.0-blue?style=flat&logo=react)](https://react.dev/)
 [![TypeScript Strict](https://img.shields.io/badge/TypeScript-5.7%20Strict-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS 3](https://img.shields.io/badge/Tailwind%20CSS-3.4.1-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-21%2F21%20Passed-18794E?style=flat)](utils/functional_e2e.test.ts)
+[![Tests Passing](https://img.shields.io/badge/Tests-27%2F27%20Passed-18794E?style=flat)](utils/ui_interactions.test.ts)
 [![Accessibility](https://img.shields.io/badge/WCAG-AAA%20Compliant-1B365D?style=flat)](#aksesibilitas--desain-generasi-x)
 
 Aplikasi web prototipe interaktif untuk merampingkan dan mengintegrasikan 4 pilar operasional manufaktur PT Putra Hatim Mandiri:
@@ -148,14 +148,19 @@ Prototipe-phm/
 │   └── mockData.ts               # Data awal sintetis realistis
 ├── docs/                         # Repositori dokumentasi teknis & stakeholder
 │   ├── BASELINE_AUDIT.md         # Audit baseline fungsionalitas & status fitur
-│   ├── BEFORE_AFTER.md           # Analisis komparatif Sebelum vs Sesudah refactor
+│   ├── BEFORE_AFTER.md           # Analisis komparatif Sebelum vs Sesudah refactor v1
+│   ├── BEFORE_AFTER_V2.md        # Analisis perbandingan 13 screenshot v2.0
 │   ├── CHANGELOG.md              # Riwayat perubahan sistem per rilis
 │   ├── DEMO_SCRIPT.md            # Naskah panduan demonstrasi untuk Pak Yusuf
+│   ├── DESIGN_SYSTEM_V2.md       # Panduan token desain, tipografi, dan spasi v2.0
 │   ├── GAP_ANALYSIS.md           # Analisis kesenjangan bisnis vs implementasi
-│   ├── IMPLEMENTATION_PLAN.md    # Rencana eksekusi rekayasa 9 fase
+│   ├── IMPLEMENTATION_PLAN.md    # Rencana eksekusi rekayasa fase terstruktur
 │   ├── INTEGRASI.md              # Kontrak data & batas integrasi sistem INDIGO
 │   ├── LAPORAN-REFACTOR.md       # Laporan teknis refactor UX/UI
-│   ├── QA_REPORT.md              # Laporan jaminan kualitas & matriks TEST-01 s/d TEST-16
+│   ├── QA_REPORT.md              # Laporan jaminan kualitas skenario TEST-01 s/d TEST-16
+│   ├── QA_REPORT_V2.md           # Laporan QA v2.0 untuk skenario UI-01 s/d UI-22
+│   ├── UI_REFINEMENT_PLAN.md     # Rencana penyempurnaan UI/UX v2.0 per komponen
+│   ├── UI_UX_AUDIT_V2.md         # Audit visual mendalam 13 screenshot v2.0
 │   └── VIDEO_UI_AUDIT.md         # Audit visual frame-by-frame dari rekaman video
 ├── lib/
 │   ├── activity.ts               # Generator riwayat aktivitas terverifikasi
@@ -191,7 +196,7 @@ Navigasi menggunakan URL Hash yang ramah terhadap peramban dan tidak memerlukan 
 
 ## 🧪 Hasil Verifikasi Kualitas
 
-- **Unit & Integration Test:** 21 / 21 Passed (100%)
+- **Unit & Integration Test:** 27 / 27 Passed (100% Pass: TEST-01 s/d TEST-16 & UI-01 s/d UI-22)
 - **TypeScript Typecheck:** 0 Errors
 - **Next.js Production Build:** 100% Berhasil
 - **Deployment Produksi:** [https://phmprototype.vercel.app](https://phmprototype.vercel.app)

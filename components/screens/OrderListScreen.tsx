@@ -189,23 +189,29 @@ export const OrderListScreen: React.FC<OrderListScreenProps> = ({
               </thead>
               <tbody className="divide-y divide-line">
                 {filtered.map(({ o, progress, partner, product }) => (
-                  <tr key={o.order_id} className="hover:bg-subtle/70 align-top">
+                  <tr key={o.order_id} className="hover:bg-brand-soft/30 transition-colors align-top group">
                     <td className="px-5 py-4">
-                      <span className="block font-mono font-bold text-navy">{o.order_id}</span>
+                      <button
+                        type="button"
+                        onClick={() => onSelectOrder(o.order_id)}
+                        className="text-left font-mono font-bold text-navy group-hover:text-brand transition-colors cursor-pointer block"
+                      >
+                        {o.order_id}
+                      </button>
                       <span className="block text-sm text-ink-muted">PO {o.po_number}</span>
                       <span className="mt-1 block"><SourceBadge source={o.source} /></span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="block font-semibold text-ink">{partner?.partner_name}</span>
+                      <span className="block font-semibold text-ink group-hover:text-navy transition-colors">{partner?.partner_name}</span>
                       <span className="block text-[15px] text-ink-muted">{product?.product_name}</span>
                     </td>
-                    <td className="px-5 py-4 text-right font-bold tabular-nums">{progress.totalOrdered.toLocaleString('id-ID')}</td>
+                    <td className="px-5 py-4 text-right font-bold tabular-nums text-navy">{progress.totalOrdered.toLocaleString('id-ID')}</td>
                     <td className="px-5 py-4 text-[15px] tabular-nums">
                       <span className="block">
-                        Dibuat <strong>{progress.totalProduced.toLocaleString('id-ID')}</strong>
+                        Dibuat <strong className="text-brand">{progress.totalProduced.toLocaleString('id-ID')}</strong>
                       </span>
                       <span className="block">
-                        Dikirim <strong>{progress.totalShipped.toLocaleString('id-ID')}</strong>
+                        Dikirim <strong className="text-success">{progress.totalShipped.toLocaleString('id-ID')}</strong>
                       </span>
                     </td>
                     <td className="px-5 py-4 text-[15px]">
@@ -215,7 +221,7 @@ export const OrderListScreen: React.FC<OrderListScreenProps> = ({
                       <OrderStatusBadge status={progress.computedStatus} />
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <Button variant="secondary" onClick={() => onSelectOrder(o.order_id)} iconRight={<ChevronRight className="w-5 h-5" />}>
+                      <Button variant="secondary" size="sm" onClick={() => onSelectOrder(o.order_id)} iconRight={<ChevronRight className="w-4 h-4" />}>
                         Detail<span className="sr-only"> pesanan {o.order_id}</span>
                       </Button>
                     </td>
@@ -232,32 +238,34 @@ export const OrderListScreen: React.FC<OrderListScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectOrder(o.order_id)}
-                  className="w-full text-left bg-surface border border-line rounded-card shadow-card p-4 hover:border-line-field cursor-pointer"
+                  className="interactive-card w-full text-left bg-surface border border-line rounded-card shadow-card p-4.5 hover:border-line-blue cursor-pointer group"
                 >
                   <span className="flex items-start justify-between gap-3">
                     <span className="min-w-0">
-                      <span className="block text-[17px] font-bold text-ink">{partner?.partner_name}</span>
+                      <span className="block text-[17px] font-bold text-ink group-hover:text-brand transition-colors">{partner?.partner_name}</span>
                       <span className="block text-[15px] text-ink-muted">
-                        {product?.product_name} · <span className="font-mono">{o.order_id}</span>
+                        {product?.product_name} · <span className="font-mono text-navy font-semibold">{o.order_id}</span>
                       </span>
                     </span>
-                    <ChevronRight className="w-6 h-6 text-ink-muted shrink-0" aria-hidden />
+                    <span className="w-8 h-8 rounded-lg bg-subtle text-ink-muted group-hover:bg-brand-soft group-hover:text-brand flex items-center justify-center shrink-0 transition-colors">
+                      <ChevronRight className="w-5 h-5" aria-hidden />
+                    </span>
                   </span>
                   <span className="mt-3 flex flex-wrap gap-2">
                     <OrderStatusBadge status={progress.computedStatus} />
                     <SourceBadge source={o.source} />
                   </span>
-                  <span className="mt-3 grid grid-cols-3 gap-2 text-[15px]">
+                  <span className="mt-3 grid grid-cols-3 gap-2 text-[15px] p-2.5 rounded-lg bg-subtle border border-line/60">
                     <span>
-                      <span className="block text-sm text-ink-muted">Dipesan</span>
-                      <strong className="tabular-nums">{progress.totalOrdered.toLocaleString('id-ID')}</strong>
+                      <span className="block text-xs text-ink-muted">Dipesan</span>
+                      <strong className="tabular-nums text-navy">{progress.totalOrdered.toLocaleString('id-ID')}</strong>
                     </span>
                     <span>
-                      <span className="block text-sm text-ink-muted">Dikirim</span>
-                      <strong className="tabular-nums">{progress.totalShipped.toLocaleString('id-ID')}</strong>
+                      <span className="block text-xs text-ink-muted">Dikirim</span>
+                      <strong className="tabular-nums text-success">{progress.totalShipped.toLocaleString('id-ID')}</strong>
                     </span>
                     <span>
-                      <span className="block text-sm text-ink-muted">Tenggat</span>
+                      <span className="block text-xs text-ink-muted">Tenggat</span>
                       <DueLabel due={o.due_date} done={progress.computedStatus === 'selesai'} />
                     </span>
                   </span>

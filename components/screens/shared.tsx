@@ -21,17 +21,24 @@ export interface WriteContext {
 export function StaffNotice({ actor, onRequireStaff }: { actor: string | null; onRequireStaff: () => void }) {
   if (actor) {
     return (
-      <p className="flex items-center gap-2 text-[15px] text-ink-muted">
-        <UserRound className="w-5 h-5 text-navy" aria-hidden />
-        Dicatat atas nama <strong className="text-ink">{actor}</strong>
-        <button
-          type="button"
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-card bg-subtle border border-line">
+        <p className="flex items-center gap-2.5 text-base text-ink">
+          <span className="w-8 h-8 rounded-full bg-brand-soft text-brand flex items-center justify-center shrink-0">
+            <UserRound className="w-4 h-4" aria-hidden />
+          </span>
+          <span>
+            Dicatat atas nama: <strong className="text-navy font-bold">{actor}</strong>
+          </span>
+        </p>
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={onRequireStaff}
-          className="min-h-[44px] px-2 font-semibold text-brand underline underline-offset-4 cursor-pointer"
+          icon={<UserRound className="w-4 h-4" />}
         >
-          Ganti
-        </button>
-      </p>
+          Ganti Petugas
+        </Button>
+      </div>
     );
   }
   return (

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Truck, MapPin } from 'lucide-react';
+import { ArrowRight, Truck, MapPin, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { Order, Partner, Product, ProductionRecord, DeliveryRecord } from '../../types';
 import { calculateSingleOrderProgress, getVerificationStatus, validateDeliveryForm } from '../../utils/operations';
 import { formatDate, formatDateTime, nowLocalDateTime, sortableTime } from '../../lib/format';
@@ -60,6 +60,7 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<{ record: DeliveryRecord; duplicate?: boolean } | null>(null);
+  const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -393,30 +394,52 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
           </div>
         </form>
 
-        <aside className="lg:col-span-4">
-          <Card title="Riwayat pengiriman" description={order ? `Untuk pesanan ${order.order_id}` : 'Semua pesanan'} as="div">
-            {recent.length === 0 ? (
-              <EmptyState title="Belum ada pengiriman" description="Pengiriman pesanan ini akan muncul di sini." />
-            ) : (
-              <ul className="divide-y divide-line -my-3">
-                {recent.map((r) => (
-                  <li key={r.delivery_id} className="py-3">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <span className="text-[17px] font-bold tabular-nums">{r.quantity_shipped.toLocaleString('id-ID')} pcs</span>
-                      <span className="text-sm text-ink-muted">{formatDateTime(r.shipped_at)}</span>
-                    </div>
-                    <p className="text-sm text-ink-muted">
-                      {r.order_id} · SJ {r.delivery_note ?? '—'}
-                    </p>
-                    <div className="mt-1.5">
-                      <VerificationBadge status={getVerificationStatus(r)} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {order && <p className="mt-4 text-sm text-ink-muted">Tenggat pesanan: {formatDate(order.due_date)}</p>}
-          </Card>
+        <aside className="lg:col-span-4 space-y-4 lg:sticky lg:top-[calc(var(--navbar-height,72px)+24px)]">
+          {/* Mobile Toggle Button */}
+          <div className="lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileHistoryOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between p-3.5 rounded-card bg-subtle border border-line text-ink font-semibold text-[15px] cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <History className="w-5 h-5 text-success" />
+                <span>Riwayat Pengiriman Terbaru ({recent.length})</span>
+              </span>
+              {mobileHistoryOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+          </div>
+
+          <div className={`${mobileHistoryOpen ? 'block' : 'hidden'} lg:block transition-all duration-200`}>
+            <Card title="Riwayat pengiriman" description={order ? `Untuk pesanan ${order.order_id}` : 'Semua pesanan'} as="div">
+              {recent.length === 0 ? (
+                <EmptyState title="Belum ada pengiriman" description="Pengiriman pesanan ini akan muncul di sini." />
+              ) : (
+                <ul className="divide-y divide-line -my-3 max-h-[440px] overflow-y-auto pr-1">
+                  {recent.map((r) => (
+                    <li key={r.delivery_id} className="py-3">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-[17px] font-bold tabular-nums text-success">{r.quantity_shipped.toLocaleString('id-ID')} pcs</span>
+                        <span className="text-sm text-ink-muted">{formatDateTime(r.shipped_at)}</span>
+                      </div>
+                      <p className="text-sm text-ink-muted mt-0.5">
+                        {r.order_id} · SJ <strong className="text-ink font-mono">{r.delivery_note ?? '—'}</strong>
+                      </p>
+                      <div className="mt-1.5">
+                        <VerificationBadge status={getVerificationStatus(r)} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {order && (
+                <p className="mt-4 pt-3 border-t border-line text-sm text-ink-muted flex items-center justify-between">
+                  <span>Tenggat pesanan:</span>
+                  <strong className="text-ink font-semibold">{formatDate(order.due_date)}</strong>
+                </p>
+              )}
+            </Card>
+          </div>
         </aside>
       </div>
 

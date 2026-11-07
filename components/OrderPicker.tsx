@@ -4,6 +4,7 @@ import { Order, Partner, Product, ProductionRecord, DeliveryRecord } from '../ty
 import { calculateSingleOrderProgress } from '../utils/operations';
 import { formatDate } from '../lib/format';
 import { inputClass } from './ui/Field';
+import { Button } from './ui/Button';
 
 interface OrderPickerProps {
   id: string;
@@ -107,8 +108,10 @@ export function OrderPicker({
           return (
             <label
               key={o.order_id}
-              className={`flex gap-3 p-4 rounded-card border-2 cursor-pointer transition-colors ${
-                checked ? 'border-brand bg-brand-soft' : 'border-line hover:border-line-field bg-surface'
+              className={`interactive-card flex gap-3 p-4 rounded-card border-2 cursor-pointer transition-all shadow-xs ${
+                checked
+                  ? 'border-brand bg-brand-soft/70 shadow-sm'
+                  : 'border-line hover:border-line-blue hover:shadow-card bg-surface'
               }`}
             >
               <input
@@ -156,13 +159,15 @@ export function OrderPicker({
       </div>
 
       {(hiddenCount > 0 || showAll) && !query && (
-        <button
-          type="button"
-          onClick={() => setShowAll((s) => !s)}
-          className="mt-3 min-h-[44px] px-2 -ml-2 text-[15px] font-semibold text-brand underline underline-offset-4 cursor-pointer"
-        >
-          {showAll ? 'Sembunyikan pesanan yang sudah terpenuhi' : `Tampilkan juga ${hiddenCount} pesanan yang sudah terpenuhi`}
-        </button>
+        <div className="mt-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowAll((s) => !s)}
+          >
+            {showAll ? 'Sembunyikan pesanan yang sudah terpenuhi' : `Tampilkan juga ${hiddenCount} pesanan yang sudah terpenuhi`}
+          </Button>
+        </div>
       )}
     </fieldset>
   );

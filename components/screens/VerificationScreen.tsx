@@ -251,62 +251,74 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
             const r = row.record;
             const Icon = row.kind === 'produksi' ? Factory : Truck;
             return (
-              <li key={`${row.kind}-${row.id}`} className="bg-surface border border-line rounded-card shadow-card p-5">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+              <li
+                key={`${row.kind}-${row.id}`}
+                className="interactive-card bg-surface border border-line rounded-card shadow-card p-5 md:p-6 hover:border-line-blue hover:shadow-card-hover transition-all"
+              >
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="flex items-center gap-2 text-sm font-semibold text-ink-muted">
-                      <Icon className="w-5 h-5 text-navy" aria-hidden />
-                      {row.kind === 'produksi' ? 'Produksi' : 'Pengiriman'} · No. {row.id}
-                    </p>
-                    <p className="mt-1 text-xl font-bold tabular-nums">
-                      {row.qty.toLocaleString('id-ID')} pcs
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
+                      <span className="w-6 h-6 rounded-md bg-subtle flex items-center justify-center text-navy shrink-0">
+                        <Icon className="w-3.5 h-3.5" aria-hidden />
+                      </span>
+                      <span>{row.kind === 'produksi' ? 'Pencatatan Produksi' : 'Pencatatan Pengiriman'}</span>
+                      <span>·</span>
+                      <span className="font-mono text-ink">ID #{row.id}</span>
+                    </div>
+
+                    <p className="mt-2 text-2xl md:text-3xl font-bold text-navy tabular-nums">
+                      {row.qty.toLocaleString('id-ID')} <span className="text-base font-semibold text-ink-muted">pcs</span>
                       {row.kind === 'produksi' && !!(r as ProductionRecord).reject_qty && (
-                        <span className="text-base font-semibold text-warning">
-                          {' '}
-                          · cacat {(r as ProductionRecord).reject_qty} pcs
+                        <span className="text-base font-semibold text-warning ml-2">
+                          (cacat: {(r as ProductionRecord).reject_qty} pcs)
                         </span>
                       )}
                     </p>
-                    <p className="text-base text-ink">
-                      {partner?.partner_name ?? 'Mitra?'} · {product?.product_name ?? 'Barang?'}{' '}
+
+                    <div className="mt-1.5 flex items-center gap-2 flex-wrap text-base text-ink">
+                      <span className="font-bold text-ink">{partner?.partner_name ?? 'Mitra'}</span>
+                      <span className="text-ink-muted">·</span>
+                      <span className="text-ink-muted">{product?.product_name ?? 'Barang'}</span>
                       <button
                         type="button"
                         onClick={() => onSelectOrder(r.order_id)}
-                        className="font-mono font-semibold text-brand underline underline-offset-4 cursor-pointer"
+                        className="inline-flex items-center gap-1 font-mono text-xs font-bold text-brand bg-brand-soft border border-brand/30 px-2 py-0.5 rounded-md hover:bg-brand hover:text-white transition-colors cursor-pointer"
                       >
-                        {r.order_id}
+                        PO: {r.order_id}
                       </button>
-                    </p>
+                    </div>
                   </div>
-                  <VerificationBadge status={row.status} />
+                  <div className="shrink-0">
+                    <VerificationBadge status={row.status} />
+                  </div>
                 </div>
 
-                <dl className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[15px]">
+                <dl className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-[15px] p-4 rounded-field bg-subtle border border-line/70">
                   <div>
-                    <dt className="text-sm text-ink-muted">Waktu kejadian</dt>
-                    <dd className="font-semibold">{formatDateTime(row.when)}</dd>
+                    <dt className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Waktu kejadian</dt>
+                    <dd className="font-semibold text-ink mt-0.5">{formatDateTime(row.when)}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm text-ink-muted">Dicatat oleh</dt>
-                    <dd className="font-semibold">{r.recorded_by}</dd>
+                    <dt className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Dicatat oleh</dt>
+                    <dd className="font-semibold text-ink mt-0.5">{r.recorded_by}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm text-ink-muted">Waktu input</dt>
-                    <dd className="font-semibold">
+                    <dt className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Waktu input</dt>
+                    <dd className="font-semibold text-ink mt-0.5">
                       {r.created_at ? formatDateTime(r.created_at) : '-'}
-                      {r.source === 'data_contoh' && <span className="font-normal text-ink-muted"> (data contoh)</span>}
+                      {r.source === 'data_contoh' && <span className="font-normal text-xs text-ink-muted"> (simulasi)</span>}
                     </dd>
                   </div>
                   {row.kind === 'pengiriman' && (
                     <div>
-                      <dt className="text-sm text-ink-muted">Surat jalan</dt>
-                      <dd className="font-semibold">{(r as DeliveryRecord).delivery_note ?? 'Belum diisi'}</dd>
+                      <dt className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Surat jalan</dt>
+                      <dd className="font-mono font-bold text-navy mt-0.5">{(r as DeliveryRecord).delivery_note ?? 'Belum diisi'}</dd>
                     </div>
                   )}
                   {r.notes && (
                     <div className="sm:col-span-2">
-                      <dt className="text-sm text-ink-muted">Catatan pencatat</dt>
-                      <dd>{r.notes}</dd>
+                      <dt className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Catatan operator</dt>
+                      <dd className="text-ink mt-0.5">{r.notes}</dd>
                     </div>
                   )}
                 </dl>

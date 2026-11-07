@@ -10,11 +10,17 @@
  */
 @layer base {
   :root {
+    --navbar-height: 72px;
+    --sidebar-sticky-gap: 24px;
+
     --c-navy: 27 54 93;            /* #1B365D  header, judul */
     --c-navy-strong: 36 66 111;    /* #24426F  hover di atas navy */
     --c-brand: 0 119 200;          /* #0077C8  tombol utama, tautan, fokus */
     --c-brand-strong: 0 98 166;    /* #0062A6  hover tombol utama */
     --c-brand-soft: 235 245 251;   /* #EBF5FB  latar sorotan */
+    --c-blue-light: 238 245 253;   /* #EEF5FD  surface blue light */
+    --c-blue-soft: 229 241 251;    /* #E5F1FB  surface blue soft */
+    --c-border-blue: 189 214 237;  /* #BDD6ED  border blue soft */
     --c-canvas: 242 244 247;       /* #F2F4F7  latar halaman */
     --c-surface: 255 255 255;      /* #FFFFFF  kartu */
     --c-subtle: 248 250 252;       /* #F8FAFC  latar sekunder */
@@ -77,3 +83,75 @@
   outline: 3px solid rgb(var(--c-brand));
   outline-offset: 2px;
 }
+
+/* Micro-interaction & Enterprise Card Styling */
+.interactive-card {
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 200ms ease,
+              border-color 180ms ease,
+              background-color 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .interactive-card:hover {
+    transform: translateY(-3px) scale(1.006);
+    border-color: rgb(var(--c-border-blue));
+    box-shadow: 0 12px 28px -6px rgba(27, 54, 93, 0.12);
+  }
+}
+
+.interactive-card:active {
+  transform: scale(0.99);
+}
+
+.interactive-card:focus-visible {
+  outline: 3px solid rgb(var(--c-brand));
+  outline-offset: 3px;
+}
+
+/* Interactive Button Hover */
+.interactive-button {
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 180ms ease,
+              background-color 150ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .interactive-button:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 14px rgba(0, 119, 200, 0.25);
+  }
+}
+
+.interactive-button:active {
+  transform: scale(0.985);
+}
+
+/* Sticky layout utilities */
+.form-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .form-layout-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  }
+
+  .form-sticky-panel {
+    position: sticky;
+    top: calc(var(--navbar-height, 72px) + var(--sidebar-sticky-gap, 24px));
+    align-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interactive-card,
+  .interactive-button {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
