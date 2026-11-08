@@ -44,3 +44,4 @@
 - Target sentuh minimal: 44–48 px pada seluruh tombol kontrol mobile.
 - Kontras warna teks: minimal 4.5:1 untuk teks normal, 3:1 untuk teks besar dan komponen grafis.
 - Mendukung `prefers-reduced-motion: reduce` untuk menonaktifkan translasi/animasi bagi pengguna yang sensitif terhadap gerakan.
+

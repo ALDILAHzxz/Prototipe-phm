@@ -47,3 +47,4 @@ flowchart TD
    - Pasang `BeeshaFloatingFAB`, integrasikan `UserProfileModal`, dan hubungkan state pembukaan profil dari navbar dan drawer.
 9. **`utils/ui_interactions.test.ts`**:
    - Tambahkan skenario pengujian untuk V4: NAV-01 s/d NAV-05, PROF-01 s/d PROF-05, AI-01 s/d AI-05, DASH-01 s/d DASH-03, EXAM-01 s/d EXAM-04, ORDER-01 s/d ORDER-03, CARD-01 s/d CARD-05.
+

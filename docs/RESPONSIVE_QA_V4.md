@@ -42,3 +42,4 @@
    - Dialog modal menerapkan perangkap fokus (*focus trapping*) dan menutup saat tombol `Escape` ditekan.
 4. **Dukungan Pengurangan Gerakan (Reduced Motion):**
    - Media query `@media (prefers-reduced-motion: reduce)` menonaktifkan translasi transformasi dan mempercepat transisi menjadi instan untuk kenyamanan vestibular pengguna.
+

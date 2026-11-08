@@ -67,3 +67,4 @@ Fitur pemilihan petugas lama kini dipindahkan dan diintegrasikan secara terpadu 
   - Dilengkapi dialog konfirmasi untuk mencegah ketidaksengajaan.
   - Saat dikonfirmasi, identitas petugas aktif dihapus dari `localStorage`, mengembalikan antarmuka ke keadaan "Belum memilih petugas".
   - **Data Catatan Tetap Aman:** Catatan pesanan, produksi, dan pengiriman yang telah dibuat sebelumnya TIDAK dihapus, menjaga keutuhan riwayat kerja.
+

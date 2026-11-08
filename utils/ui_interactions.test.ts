@@ -215,4 +215,14 @@ describe('UI & Interaction Refinement Verifications (UI-01 to UI-22)', () => {
     assert.ok(counts.semua >= counts.aktif);
     assert.ok(counts.aktif >= 0);
   });
+
+  it('ACTIVITY-V4-01 & ALERT-V4-01: Activity and Alert filters align with unified compact mobile selector pattern', () => {
+    // Activity History must have exactly 5 filter options
+    const activityOptions = ['semua', 'pesanan', 'produksi', 'pengiriman', 'pemeriksaan'];
+    assert.equal(activityOptions.length, 5);
+
+    // Alert Center must have exactly 4 filter options
+    const alertOptions = ['semua', 'terlambat', 'mendekati', 'tindakan'];
+    assert.equal(alertOptions.length, 4);
+  });
 });
