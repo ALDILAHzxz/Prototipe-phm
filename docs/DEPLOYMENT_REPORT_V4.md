@@ -10,6 +10,7 @@
 
 - **URL Repositori GitHub:** `https://github.com/ALDILAHzxz/Prototipe-phm.git`
 - **Cabang Aktif:** `main`
+- **Commit SHA:** `6447c45`
 - **Pesan Komit:** `feat(v4): refine mobile navbar, unified profile, persistent AI FAB, and balanced filters`
 - **Integritas Cabang:** Bebas konflik, branch `main` sinkron dengan remote origin.
 
@@ -19,6 +20,7 @@
 
 - **URL Produksi Resmi:** `https://phmprototype.vercel.app/`
 - **Domain Alias:** `phmprototype.vercel.app`
+- **Deployment ID:** `dpl_C1YVWLB2xnK7Rr2dKELhdriSsbpe`
 - **Framework Preset:** Next.js (App Router v15.5.29)
 - **Target Deployment:** Production
 - **Status Kesiapan:** `READY` (HTTP 200 OK)
