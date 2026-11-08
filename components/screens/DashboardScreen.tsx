@@ -176,11 +176,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         >
           <div className="flex items-center justify-between">
             <span className="text-base font-semibold text-ink-muted">Pesanan Aktif</span>
-            <span className="w-9 h-9 rounded-lg bg-subtle text-navy flex items-center justify-center group-hover:bg-brand-soft group-hover:text-brand transition-colors">
+            <span className="w-9 h-9 rounded-lg bg-subtle text-navy dark:text-[#8CCBFF] flex items-center justify-center group-hover:bg-brand-soft group-hover:text-brand transition-colors">
               <ClipboardPlus className="w-5 h-5" aria-hidden />
             </span>
           </div>
-          <p className="mt-3 text-3xl md:text-[36px] font-bold text-navy tabular-nums leading-none">
+          <p className="mt-3 text-3xl md:text-[36px] font-bold text-navy dark:text-[#8CCBFF] tabular-nums leading-none">
             {metrics.activeOrdersCount} <span className="text-base font-semibold text-ink-muted">pesanan</span>
           </p>
           <p className="mt-2 text-[14px] text-ink-muted flex items-center justify-between">
@@ -266,9 +266,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div className="p-4 rounded-card bg-subtle border border-line">
             <p className="text-sm font-semibold text-ink-muted flex items-center gap-1.5">
-              <Package className="w-4 h-4 text-navy" /> Dipesan
+              <Package className="w-4 h-4 text-navy dark:text-[#8CCBFF]" /> Dipesan
             </p>
-            <p className="mt-2 text-2xl font-bold tabular-nums text-navy">
+            <p className="mt-2 text-2xl font-bold tabular-nums text-navy dark:text-[#8CCBFF]">
               {metrics.totalOrderedQty.toLocaleString('id-ID')} <span className="text-sm font-semibold">pcs</span>
             </p>
             <p className="text-xs text-ink-muted mt-1">Total PO tercatat</p>
@@ -397,9 +397,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-5 rounded-card bg-subtle border border-line">
             <dt className="text-base font-semibold text-ink flex items-center gap-2">
-              <ClipboardPlus className="w-4 h-4 text-navy" /> Pesanan masuk
+              <ClipboardPlus className="w-4 h-4 text-navy dark:text-[#8CCBFF]" /> Pesanan masuk
             </dt>
-            <dd className="mt-2 text-[32px] font-bold tabular-nums text-navy leading-none">{summary.ordersInPeriod}</dd>
+            <dd className="mt-2 text-[32px] font-bold tabular-nums text-navy dark:text-[#8CCBFF] leading-none">{summary.ordersInPeriod}</dd>
             <dd className="mt-2 text-[15px] text-ink-muted">Jumlah PO dengan tanggal pesanan di periode ini.</dd>
           </div>
           <div className="p-5 rounded-card bg-subtle border border-line">
@@ -533,13 +533,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 <li key={n} className="flex items-start gap-3 p-2.5 rounded-field bg-subtle border border-line">
                   <Link2Off className="w-5 h-5 text-ink-muted shrink-0 mt-0.5" aria-hidden />
                   <span>
-                    <strong className="text-navy">{n}:</strong> belum terhubung. Data belum dikirim ke server pusat.
+                    <strong className="text-navy dark:text-[#8CCBFF]">{n}:</strong> belum terhubung. Data belum dikirim ke server pusat.
                   </span>
                 </li>
               ))}
             </ul>
             <p className="mt-3 text-sm text-ink-muted">
-              Data disimpan di peramban perangkat ini. Kontrak integrasi lengkap tercatat di <span className="font-mono text-navy">docs/INTEGRASI.md</span>.
+              Data disimpan di peramban perangkat ini. Kontrak integrasi lengkap tercatat di <span className="font-mono text-navy dark:text-[#8CCBFF]">docs/INTEGRASI.md</span>.
             </p>
           </Card>
         </div>
@@ -593,9 +593,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           {activities.slice(0, 5).map((a) => (
             <div key={a.activity_id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-start gap-3">
-                <span className="w-8 h-8 rounded-lg bg-subtle text-navy flex items-center justify-center shrink-0 mt-0.5">
-                  {a.activity_type === 'pesanan' && <ClipboardPlus className="w-4 h-4 text-brand" />}
-                  {a.activity_type === 'produksi' && <Factory className="w-4 h-4 text-navy" />}
+                <span className="w-8 h-8 rounded-lg bg-subtle text-navy dark:text-[#8CCBFF] flex items-center justify-center shrink-0 mt-0.5 border border-line/40">
+                  {a.activity_type === 'pesanan' && <ClipboardPlus className="w-4 h-4 text-brand dark:text-[#8CCBFF]" />}
+                  {a.activity_type === 'produksi' && <Factory className="w-4 h-4 text-navy dark:text-[#8CCBFF]" />}
                   {a.activity_type === 'pengiriman' && <Truck className="w-4 h-4 text-success" />}
                   {a.activity_type === 'pemeriksaan' && <ShieldCheck className="w-4 h-4 text-warning" />}
                 </span>

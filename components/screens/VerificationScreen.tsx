@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ShieldCheck, AlertTriangle, Pencil, Factory, Truck, Flag } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Pencil, Factory, Truck, Flag, ChevronDown, Check, X } from 'lucide-react';
 import {
   Order,
   Partner,
@@ -43,6 +43,32 @@ interface Row {
 type StatusFilter = VerificationStatus | 'semua';
 type KindFilter = RecordKind | 'semua';
 
+const STATUS_OPTIONS: { id: StatusFilter; label: string }[] = [
+  { id: 'menunggu_pemeriksaan', label: 'Menunggu pemeriksaan' },
+  { id: 'perlu_diperbaiki', label: 'Perlu diperbaiki' },
+  { id: 'terverifikasi', label: 'Terverifikasi' },
+  { id: 'semua', label: 'Semua' },
+];
+
+const KIND_OPTIONS: { id: KindFilter; label: string }[] = [
+  { id: 'semua', label: 'Produksi & pengiriman' },
+  { id: 'produksi', label: 'Produksi saja' },
+  { id: 'pengiriman', label: 'Pengiriman saja' },
+];
+
+function shortStatusLabel(status: StatusFilter, counts: Record<string, number>) {
+  if (status === 'menunggu_pemeriksaan') return `Menunggu (${counts.menunggu_pemeriksaan})`;
+  if (status === 'perlu_diperbaiki') return `Perlu Perbaikan (${counts.perlu_diperbaiki})`;
+  if (status === 'terverifikasi') return `Terverifikasi (${counts.terverifikasi})`;
+  return `Semua (${counts.semua})`;
+}
+
+function shortKindLabel(kind: KindFilter) {
+  if (kind === 'produksi') return 'Produksi Saja';
+  if (kind === 'pengiriman') return 'Pengiriman Saja';
+  return 'Semua Jenis';
+}
+
 export const VerificationScreen: React.FC<VerificationScreenProps> = ({
   orders,
   partners,
@@ -58,6 +84,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
 }) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('menunggu_pemeriksaan');
   const [kindFilter, setKindFilter] = useState<KindFilter>('semua');
+  const [mobileSheet, setMobileSheet] = useState<'status' | 'kind' | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
 
@@ -209,31 +236,207 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
         </Notice>
       )}
 
-      <Card as="div">
-        <div className="space-y-4">
-          <FilterChips<StatusFilter>
-            label="Saring berdasarkan status pemeriksaan"
-            value={statusFilter}
-            onChange={setStatusFilter}
-            options={[
-              { id: 'menunggu_pemeriksaan', label: 'Menunggu pemeriksaan', count: counts.menunggu_pemeriksaan },
-              { id: 'perlu_diperbaiki', label: 'Perlu diperbaiki', count: counts.perlu_diperbaiki },
-              { id: 'terverifikasi', label: 'Terverifikasi', count: counts.terverifikasi },
-              { id: 'semua', label: 'Semua', count: counts.semua },
-            ]}
-          />
-          <FilterChips<KindFilter>
-            label="Saring berdasarkan jenis catatan"
-            value={kindFilter}
-            onChange={setKindFilter}
-            options={[
-              { id: 'semua', label: 'Produksi & pengiriman' },
-              { id: 'produksi', label: 'Produksi saja' },
-              { id: 'pengiriman', label: 'Pengiriman saja' },
-            ]}
-          />
+      <Card as="div" className="p-4 sm:p-5 md:p-6">
+        {/* Mobile View: 2 Primary Selectors Side-by-Side (Screenshot 4 Refinement) */}
+        <div className="md:hidden space-y-3">
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Selector 1: Status */}
+            <button
+              type="button"
+              onClick={() => setMobileSheet('status')}
+              className="min-h-[52px] p-2.5 rounded-field bg-subtle border border-line hover:border-brand/60 flex flex-col justify-center text-left cursor-pointer transition-colors active:scale-[0.985]"
+              aria-label={`Saring Status: ${shortStatusLabel(statusFilter, counts)}`}
+            >
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Status</span>
+              <span className="flex items-center justify-between gap-1 text-[13px] sm:text-[14px] font-bold text-ink mt-0.5 truncate">
+                <span className="truncate">{shortStatusLabel(statusFilter, counts)}</span>
+                <ChevronDown className="w-4 h-4 text-brand dark:text-[#8CCBFF] shrink-0" aria-hidden />
+              </span>
+            </button>
+
+            {/* Selector 2: Jenis */}
+            <button
+              type="button"
+              onClick={() => setMobileSheet('kind')}
+              className="min-h-[52px] p-2.5 rounded-field bg-subtle border border-line hover:border-brand/60 flex flex-col justify-center text-left cursor-pointer transition-colors active:scale-[0.985]"
+              aria-label={`Saring Jenis: ${shortKindLabel(kindFilter)}`}
+            >
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Jenis Catatan</span>
+              <span className="flex items-center justify-between gap-1 text-[13px] sm:text-[14px] font-bold text-ink mt-0.5 truncate">
+                <span className="truncate">{shortKindLabel(kindFilter)}</span>
+                <ChevronDown className="w-4 h-4 text-brand dark:text-[#8CCBFF] shrink-0" aria-hidden />
+              </span>
+            </button>
+          </div>
+
+          {/* Result summary below */}
+          <div className="flex items-center justify-between text-xs text-ink-muted px-1">
+            <span>
+              Menampilkan <strong className="text-ink">{visible.length}</strong> catatan
+            </span>
+            {(statusFilter !== 'semua' || kindFilter !== 'semua') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('semua');
+                  setKindFilter('semua');
+                }}
+                className="text-brand dark:text-[#8CCBFF] font-semibold hover:underline cursor-pointer"
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop View: Full-Width 4-Col Row + Centered 3-Col Row (Screenshot 3 Refinement) */}
+        <div className="hidden md:block space-y-4">
+          <div>
+            <span className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-2.5">
+              Status Pemeriksaan
+            </span>
+            <div className="grid grid-cols-4 gap-3 w-full">
+              {STATUS_OPTIONS.map((opt) => {
+                const active = statusFilter === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setStatusFilter(opt.id)}
+                    className={`min-h-[52px] px-3.5 py-2.5 rounded-field border text-[15px] font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all duration-150 active:scale-[0.985] ${
+                      active
+                        ? 'bg-navy dark:bg-brand text-white dark:text-[#0B111B] border-navy dark:border-brand shadow-sm font-bold'
+                        : 'bg-surface text-ink border-line hover:bg-subtle hover:border-brand/50'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    <span
+                      className={`tabular-nums font-bold px-2 py-0.5 rounded text-xs ${
+                        active
+                          ? 'bg-white/20 text-white dark:bg-black/20 dark:text-[#0B111B]'
+                          : 'bg-subtle text-ink-muted'
+                      }`}
+                    >
+                      {counts[opt.id]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-line/60">
+            <span className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-2.5 text-center">
+              Jenis Catatan
+            </span>
+            <div className="grid grid-cols-3 max-w-2xl mx-auto gap-3 w-full">
+              {KIND_OPTIONS.map((opt) => {
+                const active = kindFilter === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setKindFilter(opt.id)}
+                    className={`min-h-[48px] px-3.5 py-2 rounded-field border text-[14px] font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all duration-150 active:scale-[0.985] ${
+                      active
+                        ? 'bg-navy dark:bg-brand text-white dark:text-[#0B111B] border-navy dark:border-brand shadow-sm font-bold'
+                        : 'bg-surface text-ink border-line hover:bg-subtle hover:border-brand/50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <p className="text-right text-xs text-ink-muted pt-1">
+            Menampilkan <strong className="text-ink">{visible.length}</strong> dari {rows.length} catatan
+          </p>
         </div>
       </Card>
+
+      {/* Mobile Bottom-Sheet Filter Dialog */}
+      {mobileSheet && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={mobileSheet === 'status' ? 'Saring Status Pemeriksaan' : 'Saring Jenis Catatan'}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150"
+        >
+          <div
+            className="fixed inset-0"
+            onClick={() => setMobileSheet(null)}
+            aria-hidden
+          />
+          <div className="relative w-full sm:max-w-md bg-surface rounded-t-2xl sm:rounded-2xl border border-line p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto z-10 animate-in slide-in-from-bottom duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
+              <h3 className="text-lg font-bold text-ink">
+                {mobileSheet === 'status' ? 'Saring Status Pemeriksaan' : 'Saring Jenis Catatan'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setMobileSheet(null)}
+                className="w-9 h-9 rounded-field flex items-center justify-center text-ink-muted hover:bg-subtle cursor-pointer"
+                aria-label="Tutup saringan"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {mobileSheet === 'status'
+                ? STATUS_OPTIONS.map((opt) => {
+                    const active = statusFilter === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter(opt.id);
+                          setMobileSheet(null);
+                        }}
+                        className={`w-full min-h-[52px] px-4 py-3 rounded-field border flex items-center justify-between text-left cursor-pointer transition-colors ${
+                          active
+                            ? 'bg-brand/10 border-brand text-brand dark:text-[#8CCBFF] font-bold'
+                            : 'bg-surface border-line text-ink hover:bg-subtle'
+                        }`}
+                      >
+                        <span className="text-[15px]">{opt.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="tabular-nums text-xs px-2 py-0.5 rounded-full bg-subtle text-ink-muted font-bold">
+                            {counts[opt.id]}
+                          </span>
+                          {active && <Check className="w-5 h-5 text-brand dark:text-[#8CCBFF]" />}
+                        </div>
+                      </button>
+                    );
+                  })
+                : KIND_OPTIONS.map((opt) => {
+                    const active = kindFilter === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setKindFilter(opt.id);
+                          setMobileSheet(null);
+                        }}
+                        className={`w-full min-h-[52px] px-4 py-3 rounded-field border flex items-center justify-between text-left cursor-pointer transition-colors ${
+                          active
+                            ? 'bg-brand/10 border-brand text-brand dark:text-[#8CCBFF] font-bold'
+                            : 'bg-surface border-line text-ink hover:bg-subtle'
+                        }`}
+                      >
+                        <span className="text-[15px]">{opt.label}</span>
+                        {active && <Check className="w-5 h-5 text-brand dark:text-[#8CCBFF]" />}
+                      </button>
+                    );
+                  })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {visible.length === 0 ? (
         <Card as="div">
@@ -258,7 +461,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-ink-muted">
-                      <span className="w-6 h-6 rounded-md bg-subtle flex items-center justify-center text-navy shrink-0">
+                      <span className="w-6 h-6 rounded-md bg-subtle flex items-center justify-center text-navy dark:text-[#8CCBFF] shrink-0">
                         <Icon className="w-3.5 h-3.5" aria-hidden />
                       </span>
                       <span>{row.kind === 'produksi' ? 'Pencatatan Produksi' : 'Pencatatan Pengiriman'}</span>
@@ -266,7 +469,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
                       <span className="font-mono text-ink">ID #{row.id}</span>
                     </div>
 
-                    <p className="mt-2 text-2xl md:text-3xl font-bold text-navy tabular-nums">
+                    <p className="mt-2 text-2xl md:text-3xl font-bold text-navy dark:text-[#8CCBFF] tabular-nums">
                       {row.qty.toLocaleString('id-ID')} <span className="text-base font-semibold text-ink-muted">pcs</span>
                       {row.kind === 'produksi' && !!(r as ProductionRecord).reject_qty && (
                         <span className="text-base font-semibold text-warning ml-2">
@@ -312,7 +515,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
                   {row.kind === 'pengiriman' && (
                     <div>
                       <dt className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Surat jalan</dt>
-                      <dd className="font-mono font-bold text-navy mt-0.5">{(r as DeliveryRecord).delivery_note ?? 'Belum diisi'}</dd>
+                      <dd className="font-mono font-bold text-navy dark:text-[#8CCBFF] mt-0.5">{(r as DeliveryRecord).delivery_note ?? 'Belum diisi'}</dd>
                     </div>
                   )}
                   {r.notes && (

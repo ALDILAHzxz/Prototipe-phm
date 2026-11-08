@@ -71,14 +71,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }}
                 aria-current={active ? 'page' : undefined}
                 className={`min-h-[44px] px-3 inline-flex items-center gap-2 rounded-field text-[15px] font-semibold whitespace-nowrap transition-colors ${
-                  active ? 'bg-white text-navy' : 'text-white/90 hover:bg-navy-strong hover:text-white'
+                  active ? 'bg-white text-[#1B365D] font-bold shadow-xs' : 'text-white/90 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 {item.shortLabel ?? item.label}
                 {!!badge && (
                   <span
                     className={`min-w-[24px] h-6 px-1.5 rounded-full text-[13px] font-bold inline-flex items-center justify-center ${
-                      active ? 'bg-navy text-white' : 'bg-white text-navy'
+                      active ? 'bg-[#1B365D] text-white' : 'bg-white text-[#1B365D]'
                     }`}
                   >
                     {badge}
@@ -96,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenStaffPicker}
-            className="min-h-[48px] px-2 sm:px-3 flex items-center gap-2 rounded-field border border-white/25 hover:bg-navy-strong cursor-pointer text-left"
+            className="min-h-[48px] px-2 sm:px-3 flex items-center gap-2 rounded-field border border-white/25 hover:bg-white/10 cursor-pointer text-left transition-colors"
             aria-label={activeStaff ? `Petugas: ${activeStaff.name}. Ganti petugas` : 'Pilih nama petugas'}
           >
             <UserRound className="w-5 h-5 shrink-0" aria-hidden />
@@ -111,7 +111,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenAssistant}
-            className="hidden sm:flex min-h-[48px] px-3 items-center gap-2 rounded-field bg-brand hover:bg-brand-strong text-[15px] font-semibold cursor-pointer"
+            className="hidden sm:flex min-h-[48px] px-3.5 items-center gap-2 rounded-field bg-brand hover:bg-brand-strong text-white dark:text-[#0F172A] text-[15px] font-bold cursor-pointer transition-colors shadow-xs"
           >
             <MessageCircleQuestion className="w-5 h-5" aria-hidden />
             <span>Tanya Beesha</span>

@@ -72,14 +72,20 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           }`}
         >
           <span
-            className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-              active ? 'bg-brand text-white' : 'bg-canvas text-navy'
+            className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${
+              active
+                ? 'bg-brand text-white border-brand shadow-xs'
+                : 'bg-brand-soft text-brand dark:bg-[#263D5A] dark:text-[#8CCBFF] border-line/40'
             }`}
           >
             <Icon className="w-5 h-5" aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
-            <span className={`block text-[17px] leading-tight ${active ? 'font-bold text-navy' : 'font-semibold text-ink'}`}>
+            <span
+              className={`block text-[17px] leading-tight ${
+                active ? 'font-bold text-brand dark:text-[#8CCBFF]' : 'font-semibold text-ink'
+              }`}
+            >
               {item.label}
             </span>
             <span className="block text-sm text-ink-muted mt-0.5">{item.description}</span>
@@ -171,9 +177,9 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                   <button
                     type="button"
                     onClick={x.onClick}
-                    className="w-full min-h-[52px] px-3 rounded-field flex items-center gap-3 text-left text-base font-semibold text-ink hover:bg-subtle cursor-pointer"
+                    className="w-full min-h-[52px] px-3 rounded-field flex items-center gap-3 text-left text-base font-semibold text-ink hover:bg-subtle cursor-pointer transition-colors"
                   >
-                    <x.icon className="w-5 h-5 text-navy" aria-hidden />
+                    <x.icon className="w-5 h-5 text-brand dark:text-[#8CCBFF] shrink-0" aria-hidden />
                     {x.label}
                   </button>
                 </li>
@@ -183,7 +189,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         </nav>
 
         <div className="p-4 border-t border-line bg-subtle text-sm text-ink-muted flex gap-2">
-          <HardDrive className="w-5 h-5 shrink-0 text-navy" aria-hidden />
+          <HardDrive className="w-5 h-5 shrink-0 text-brand dark:text-[#8CCBFF]" aria-hidden />
           <span>
             {storageKind === 'sementara'
               ? 'Penyimpanan perangkat tidak tersedia. Data hanya bertahan selama halaman ini terbuka.'

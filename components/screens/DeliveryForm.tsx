@@ -233,7 +233,7 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
             {order && progress && (
               <div className="mb-6 p-4 rounded-card bg-subtle border border-line space-y-3">
                 <p className="flex items-start gap-2 text-base">
-                  <MapPin className="w-5 h-5 text-navy shrink-0 mt-0.5" aria-hidden />
+                  <MapPin className="w-5 h-5 text-navy dark:text-[#8CCBFF] shrink-0 mt-0.5" aria-hidden />
                   <span>
                     Tujuan: <strong>{partner?.partner_name}</strong>, {partner?.city}
                     <span className="block text-sm text-ink-muted">

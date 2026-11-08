@@ -21,7 +21,7 @@ const ICON_CONFIG: Record<ActivityType, { icon: React.ReactNode; bg: string }> =
   },
   produksi: {
     icon: <Factory className="w-5 h-5" aria-hidden />,
-    bg: 'bg-[#EBF1FA] text-navy border-navy/20',
+    bg: 'bg-brand-soft dark:bg-[#263D5A] text-navy dark:text-[#8CCBFF] border-line/40',
   },
   pengiriman: {
     icon: <Truck className="w-5 h-5" aria-hidden />,
@@ -122,7 +122,7 @@ export const ActivityHistoryScreen: React.FC<ActivityHistoryScreenProps> = ({ ac
             <section key={day} aria-label={`Catatan ${day}`}>
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-brand" aria-hidden />
-                <h2 className="text-lg font-bold text-navy">{day}</h2>
+                <h2 className="text-lg font-bold text-navy dark:text-[#8CCBFF]">{day}</h2>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-subtle border border-line text-ink-muted">
                   {items.length} aktivitas
                 </span>

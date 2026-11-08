@@ -398,7 +398,7 @@ export const ProductionForm: React.FC<ProductionFormProps> = ({
                   {recent.map((r) => (
                     <li key={r.production_id} className="py-3">
                       <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-[17px] font-bold tabular-nums text-navy">{r.quantity_completed.toLocaleString('id-ID')} pcs</span>
+                        <span className="text-[17px] font-bold tabular-nums text-navy dark:text-[#8CCBFF]">{r.quantity_completed.toLocaleString('id-ID')} pcs</span>
                         <span className="text-sm text-ink-muted">{formatDateTime(r.reported_at)}</span>
                       </div>
                       <p className="text-sm text-ink-muted mt-0.5">

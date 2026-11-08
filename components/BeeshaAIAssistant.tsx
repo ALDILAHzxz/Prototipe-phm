@@ -160,7 +160,7 @@ ${lines.join('\n')}`;
         <div className="px-4 py-2.5 bg-subtle border-b border-line text-[14px] text-ink" role="status">
           {aiConfigured === null && 'Memeriksa ketersediaan Gemini AI…'}
           {aiConfigured === true && (
-            <span className="text-navy font-medium">Jawaban dianalisis oleh Gemini AI dari data di aplikasi ini.</span>
+            <span className="text-navy dark:text-[#8CCBFF] font-medium">Jawaban dianalisis oleh Gemini AI dari data di aplikasi ini.</span>
           )}
           {aiConfigured === false && (
             <span className="text-ink">Gemini AI belum terpasang. Jawaban dihitung otomatis dari data aplikasi lokal.</span>
@@ -200,7 +200,7 @@ ${lines.join('\n')}`;
                     </>
                   ) : (
                     <>
-                      <Calculator className="w-3.5 h-3.5 text-navy" aria-hidden /> Sumber: Hitungan Otomatis Lokal
+                      <Calculator className="w-3.5 h-3.5 text-navy dark:text-[#8CCBFF]" aria-hidden /> Sumber: Hitungan Otomatis Lokal
                       {m.note && ` (${m.note})`}
                     </>
                   )}

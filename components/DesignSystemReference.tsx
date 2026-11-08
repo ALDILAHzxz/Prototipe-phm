@@ -402,7 +402,7 @@ export const DesignSystemReference: React.FC<DesignSystemReferenceProps> = ({
                   </p>
                 </div>
                 <div className="p-4 rounded-xl bg-surface border border-line space-y-1">
-                  <strong className="text-base font-bold text-navy block">Riwayat Aktivitas Terkini</strong>
+                  <strong className="text-base font-bold text-navy dark:text-[#8CCBFF] block">Riwayat Aktivitas Terkini</strong>
                   <p className="text-sm text-ink-muted">
                     Garis waktu kronologis mencatat semua input pesanan, pengerjaan produksi, pengiriman, dan verifikasi oleh petugas.
                   </p>
@@ -438,7 +438,7 @@ export const DesignSystemReference: React.FC<DesignSystemReferenceProps> = ({
 
                 <div className="p-4 rounded-xl bg-surface border border-line space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-navy font-bold text-base">
+                    <div className="flex items-center gap-2 text-navy dark:text-[#8CCBFF] font-bold text-base">
                       <Box className="w-5 h-5 text-brand" />
                       <span>Viewer &amp; Inspeksi 3D Part Manufaktur</span>
                     </div>

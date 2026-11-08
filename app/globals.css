@@ -13,21 +13,22 @@
     --navbar-height: 72px;
     --sidebar-sticky-gap: 24px;
 
-    --c-navy: 27 54 93;            /* #1B365D  header, judul */
-    --c-navy-strong: 36 66 111;    /* #24426F  hover di atas navy */
-    --c-brand: 0 119 200;          /* #0077C8  tombol utama, tautan, fokus */
-    --c-brand-strong: 0 98 166;    /* #0062A6  hover tombol utama */
-    --c-brand-soft: 235 245 251;   /* #EBF5FB  latar sorotan */
-    --c-blue-light: 238 245 253;   /* #EEF5FD  surface blue light */
-    --c-blue-soft: 229 241 251;    /* #E5F1FB  surface blue soft */
-    --c-border-blue: 189 214 237;  /* #BDD6ED  border blue soft */
-    --c-canvas: 242 244 247;       /* #F2F4F7  latar halaman */
-    --c-surface: 255 255 255;      /* #FFFFFF  kartu */
-    --c-subtle: 248 250 252;       /* #F8FAFC  latar sekunder */
-    --c-ink: 30 41 59;             /* #1E293B  teks utama */
-    --c-muted: 74 88 106;          /* #4A586A  teks sekunder (kontras ≥ 6:1) */
-    --c-line: 217 224 232;         /* #D9E0E8  garis pemisah */
-    --c-field: 122 136 156;        /* #7A889C  garis input (kontras ≥ 3:1) */
+    /* PHM Corporate Light Tokens */
+    --c-navy: 27 54 93;            /* #1B365D  Primary Corporate Navy Blue */
+    --c-navy-strong: 36 66 111;    /* #24426F  Hover on Navy */
+    --c-brand: 0 119 200;          /* #0077C8  Secondary Bright Blue */
+    --c-brand-strong: 0 98 166;    /* #0062A6  Hover on Brand Blue */
+    --c-brand-soft: 232 242 250;   /* #E8F2FA  Light Blue Icon & Highlight Container */
+    --c-blue-light: 238 245 253;   /* #EEF5FD  Surface Blue Light */
+    --c-blue-soft: 229 241 251;    /* #E5F1FB  Surface Blue Soft */
+    --c-border-blue: 189 214 237;  /* #BDD6ED  Border Blue Accent */
+    --c-canvas: 242 244 247;       /* #F2F4F7  Background Soft Silver */
+    --c-surface: 255 255 255;      /* #FFFFFF  Primary White Card Surface */
+    --c-subtle: 248 250 252;       /* #F8FAFC  Secondary Surface */
+    --c-ink: 30 41 59;             /* #1E293B  Main Text Dark Charcoal (WCAG 4.5:1+) */
+    --c-muted: 82 97 116;          /* #526174  Secondary Text (WCAG 4.5:1+) */
+    --c-line: 185 198 214;         /* #B9C6D6  Navy-derived Card Border (Visible Outline) */
+    --c-field: 148 163 184;        /* #94A3B8  Input Field Border */
     --c-success: 24 121 78;        /* #18794E */
     --c-success-soft: 232 245 238;
     --c-warning: 181 71 8;         /* #B54708 */
@@ -41,29 +42,30 @@
   html.dark, :root[data-theme='dark'] {
     color-scheme: dark;
 
-    --c-navy: 15 23 42;            /* #0F172A Slate-900 / Deep Navy */
-    --c-navy-strong: 30 41 59;     /* #1E293B Slate-800 */
-    --c-brand: 14 165 233;         /* #0EA5E9 Sky-500 Vibrant Brand Blue */
-    --c-brand-strong: 2 132 199;   /* #0284C7 Sky-600 */
-    --c-brand-soft: 12 44 74;      /* #0C2C4A Brand Highlight on Dark */
-    --c-blue-light: 16 35 60;      /* #10233C */
-    --c-blue-soft: 20 45 78;       /* #142D4E */
-    --c-border-blue: 34 72 122;    /* #22487A */
-    --c-canvas: 11 15 25;          /* #0B0F19 Night Deep Canvas */
-    --c-surface: 20 28 44;         /* #141C2C Elevated Card Surface */
-    --c-subtle: 28 38 58;          /* #1C263A Secondary Surface */
-    --c-ink: 243 246 250;          /* #F3F6FA Pure High-Contrast Text */
-    --c-muted: 156 169 188;        /* #9CA9BC Slate-400 Crisp Secondary Text */
-    --c-line: 38 52 76;            /* #26344C Subtle Card & Divider Border */
-    --c-field: 68 86 114;          /* #445672 Input Field Border */
+    /* PHM Corporate Dark Mode Tokens (V3.0 Spec) */
+    --c-navy: 15 23 42;            /* #0F172A  Dark Header Surface */
+    --c-navy-strong: 30 41 59;     /* #1E293B  Dark Header Hover */
+    --c-brand: 131 199 255;        /* #83C7FF  Luminous Interactive Blue Accent */
+    --c-brand-strong: 121 190 255; /* #79BEFF  Hover Brand Blue */
+    --c-brand-soft: 38 61 90;      /* #263D5A  Dark Mode Icon Container */
+    --c-blue-light: 29 41 64;      /* #1D2940 */
+    --c-blue-soft: 38 61 90;       /* #263D5A */
+    --c-border-blue: 131 199 255;  /* #83C7FF  Luminous Hover Border */
+    --c-canvas: 11 17 27;          /* #0B111B  Dark Page Background */
+    --c-surface: 23 33 49;         /* #172131  Dark Card Background */
+    --c-subtle: 29 41 64;          /* #1D2940  Secondary Dark Surface */
+    --c-ink: 242 247 255;          /* #F2F7FF  Primary Text Near-White (15:1 Contrast) */
+    --c-muted: 189 204 224;        /* #BDCCE0  Secondary Text Light Gray-Blue */
+    --c-line: 74 113 154;          /* #4A719A  Distinct Dark Card Border (Visible Outline) */
+    --c-field: 74 113 154;         /* #4A719A  Input Field Border */
     --c-success: 46 195 125;       /* #2EC37D */
     --c-success-soft: 16 48 35;    /* #103023 */
     --c-warning: 245 158 11;       /* #F59E0B */
     --c-warning-soft: 58 36 12;    /* #3A240C */
     --c-danger: 248 113 113;       /* #F87171 */
     --c-danger-soft: 60 20 20;     /* #3C1414 */
-    --c-info: 56 189 248;          /* #38BDF8 */
-    --c-info-soft: 14 46 72;       /* #0E2E48 */
+    --c-info: 140 203 255;         /* #8CCBFF  Bright Functional Icon & Info Color */
+    --c-info-soft: 38 61 90;       /* #263D5A */
   }
 
   html {
@@ -112,10 +114,23 @@
   }
 }
 
-/* Kompatibilitas kelas lama */
+/* Kompatibilitas kelas lama & Theme-Aware Overrides */
 .focus-beesha:focus-visible {
   outline: 3px solid rgb(var(--c-brand));
   outline-offset: 2px;
+}
+
+/* 
+ * V3.0 Dark Mode Contrast Corrections:
+ * In dark mode, ensure text-navy renders with luminous bright blue (#8CCBFF)
+ * and border-navy renders with crisp border (#4A719A) so no text or icon is dark-on-dark.
+ */
+html.dark .text-navy, [data-theme='dark'] .text-navy {
+  color: rgb(140 203 255) !important;
+}
+
+html.dark .border-navy, [data-theme='dark'] .border-navy {
+  border-color: rgb(74 113 154) !important;
 }
 
 /* Micro-interaction & Enterprise Card Styling */
@@ -130,8 +145,13 @@
   .interactive-card:hover {
     transform: translateY(-3px) scale(1.006);
     border-color: rgb(var(--c-border-blue));
-    box-shadow: 0 12px 28px -6px rgba(27, 54, 93, 0.12);
+    box-shadow: 0 12px 28px -6px rgba(27, 54, 93, 0.16);
   }
+}
+
+html.dark .interactive-card:hover, [data-theme='dark'] .interactive-card:hover {
+  border-color: rgb(131 199 255);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.45);
 }
 
 .interactive-card:active {

@@ -451,13 +451,13 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Top Left Spec Badge (Unobstructed Viewport per Three.js guidelines) */}
-      <div className="absolute top-4 left-4 bg-white/95 border border-[#D9E0E8] rounded-lg px-3.5 py-2.5 shadow-sm max-w-xs pointer-events-auto">
+      <div className="absolute top-4 left-4 bg-surface/95 border border-line rounded-lg px-3.5 py-2.5 shadow-sm max-w-xs pointer-events-auto">
         <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#0077C8]" />
-          <h4 className="text-sm font-bold text-[#1E293B] leading-tight truncate">{partName}</h4>
+          <span className="w-2.5 h-2.5 rounded-full bg-brand" />
+          <h4 className="text-sm font-bold text-ink leading-tight truncate">{partName}</h4>
         </div>
-        <p className="text-xs text-[#526174] mt-0.5 font-mono">Kode Part: {partCode} · ID: {orderId}</p>
-        <p className="text-sm text-[#18794E] font-medium mt-1">✓ Validasi Toleransi Standar PHM Group</p>
+        <p className="text-xs text-ink-muted mt-0.5 font-mono">Kode Part: {partCode} · ID: {orderId}</p>
+        <p className="text-sm text-success font-medium mt-1">✓ Validasi Toleransi Standar PHM Group</p>
       </div>
 
       {/* Top Right Actions */}
@@ -465,15 +465,15 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
         <button
           onClick={handleResetCamera}
           title="Reset Sudut Pandang"
-          className="p-2.5 bg-white text-[#1E293B] hover:text-[#0077C8] border border-[#D9E0E8] rounded-lg shadow-sm transition-colors text-xs flex items-center gap-1.5 font-medium"
+          className="p-2.5 bg-surface text-ink hover:text-brand border border-line rounded-lg shadow-sm transition-colors text-xs flex items-center gap-1.5 font-medium"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className="w-4 h-4 text-brand dark:text-[#8CCBFF]" />
           <span className="hidden sm:inline">Reset Posisi</span>
         </button>
         {onClose && (
           <button
             onClick={onClose}
-            className="px-3 py-2 bg-[#1B365D] text-white hover:bg-[#152a48] rounded-lg shadow-sm transition-colors text-xs font-semibold"
+            className="px-3 py-2 bg-brand hover:bg-brand-strong text-white rounded-lg shadow-sm transition-colors text-xs font-semibold"
           >
             Tutup Inspeksi
           </button>
@@ -490,22 +490,22 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
         <div className="flex justify-center -mb-px">
           <button
             onClick={() => setIsControlsCollapsed(!isControlsCollapsed)}
-            className="bg-white border-t border-x border-[#D9E0E8] text-[#1E293B] hover:text-[#0077C8] text-sm font-semibold px-4 py-1 rounded-t-lg shadow-xs flex items-center gap-1 cursor-pointer"
+            className="bg-surface border-t border-x border-line text-ink hover:text-brand text-sm font-semibold px-4 py-1 rounded-t-lg shadow-xs flex items-center gap-1 cursor-pointer"
           >
             {isControlsCollapsed ? '▲ Tampilkan Kontrol Inspeksi' : '▼ Sembunyikan Kontrol'}
           </button>
         </div>
 
         {/* Dock Surface */}
-        <div className="bg-white border border-[#D9E0E8] rounded-xl p-3 shadow-md grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+        <div className="bg-surface border border-line rounded-xl p-3 shadow-md grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
           {/* 1. Exploded Assembly Slider */}
           <div className="flex flex-col gap-1">
-            <div className="flex justify-between items-center text-xs font-medium text-[#1E293B]">
+            <div className="flex justify-between items-center text-xs font-medium text-ink">
               <span className="flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-[#0077C8]" />
+                <Layers className="w-3.5 h-3.5 text-brand dark:text-[#8CCBFF]" />
                 Exploded View (Pemisahan Part)
               </span>
-              <span className="font-mono text-[#0077C8]">{Math.round(explodedAmount * 100)}%</span>
+              <span className="font-mono text-brand font-bold">{Math.round(explodedAmount * 100)}%</span>
             </div>
             <input
               type="range"
@@ -514,14 +514,15 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
               step="0.01"
               value={explodedAmount}
               onChange={(e) => setExplodedAmount(parseFloat(e.target.value))}
-              className="w-full accent-[#0077C8] h-1.5 bg-[#E5EAF0] rounded-lg cursor-pointer"
+              aria-label="Tingkat Pemisahan Komponen"
+              className="w-full accent-brand h-1.5 bg-subtle rounded-lg cursor-pointer"
             />
           </div>
 
           {/* 2. Finish Swatches */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[#1E293B] flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-[#0077C8]" />
+            <span className="text-xs font-medium text-ink flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-brand dark:text-[#8CCBFF]" />
               Material Finish
             </span>
             <div className="grid grid-cols-4 gap-1">
@@ -529,8 +530,8 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
                 onClick={() => setFinish('anodized_blue')}
                 className={`py-1 text-sm font-medium rounded border transition-colors ${
                   finish === 'anodized_blue'
-                    ? 'bg-[#0077C8] text-white border-[#0077C8]'
-                    : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'
+                    ? 'bg-brand text-white border-brand font-bold'
+                    : 'bg-subtle text-ink border-line hover:bg-canvas'
                 }`}
               >
                 Biru
@@ -539,8 +540,8 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
                 onClick={() => setFinish('steel')}
                 className={`py-1 text-sm font-medium rounded border transition-colors ${
                   finish === 'steel'
-                    ? 'bg-[#1B365D] text-white border-[#1B365D]'
-                    : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'
+                    ? 'bg-navy dark:bg-[#263D5A] text-white dark:text-[#8CCBFF] border-navy dark:border-[#8CCBFF] font-bold'
+                    : 'bg-subtle text-ink border-line hover:bg-canvas'
                 }`}
               >
                 Baja
@@ -549,8 +550,8 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
                 onClick={() => setFinish('nickel')}
                 className={`py-1 text-sm font-medium rounded border transition-colors ${
                   finish === 'nickel'
-                    ? 'bg-slate-700 text-white border-slate-700'
-                    : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'
+                    ? 'bg-slate-700 text-white border-slate-700 font-bold'
+                    : 'bg-subtle text-ink border-line hover:bg-canvas'
                 }`}
               >
                 Nikel
@@ -559,8 +560,8 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
                 onClick={() => setFinish('matte_black')}
                 className={`py-1 text-sm font-medium rounded border transition-colors ${
                   finish === 'matte_black'
-                    ? 'bg-black text-white border-black'
-                    : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'
+                    ? 'bg-black text-white border-black font-bold'
+                    : 'bg-subtle text-ink border-line hover:bg-canvas'
                 }`}
               >
                 Matte
@@ -574,19 +575,19 @@ export const ThreePartViewer: React.FC<ThreePartViewerProps> = ({
               onClick={() => setWireframe(!wireframe)}
               className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border flex items-center gap-1 transition-colors ${
                 wireframe
-                  ? 'bg-[#1B365D] text-white border-[#1B365D]'
-                  : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'
+                  ? 'bg-navy dark:bg-brand text-white dark:text-[#0B111B] border-navy dark:border-brand font-bold'
+                  : 'bg-subtle text-ink border-line hover:bg-canvas'
               }`}
             >
-              <Eye className="w-3.5 h-3.5" />
+              <Eye className="w-3.5 h-3.5 text-brand dark:text-[#8CCBFF]" />
               Wireframe
             </button>
             <button
               onClick={() => setAutoRotate(!autoRotate)}
               className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border flex items-center gap-1 transition-colors ${
                 autoRotate
-                  ? 'bg-[#0077C8] text-white border-[#0077C8]'
-                  : 'bg-[#F8FAFC] text-[#1E293B] border-[#D9E0E8] hover:bg-slate-100'
+                  ? 'bg-brand text-white border-brand font-bold'
+                  : 'bg-subtle text-ink border-line hover:bg-canvas'
               }`}
             >
               <RotateCw className="w-3.5 h-3.5" />

@@ -194,7 +194,7 @@ export const OrderListScreen: React.FC<OrderListScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => onSelectOrder(o.order_id)}
-                        className="text-left font-mono font-bold text-navy group-hover:text-brand transition-colors cursor-pointer block"
+                        className="text-left font-mono font-bold text-navy dark:text-[#8CCBFF] group-hover:text-brand transition-colors cursor-pointer block"
                       >
                         {o.order_id}
                       </button>
@@ -202,10 +202,10 @@ export const OrderListScreen: React.FC<OrderListScreenProps> = ({
                       <span className="mt-1 block"><SourceBadge source={o.source} /></span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="block font-semibold text-ink group-hover:text-navy transition-colors">{partner?.partner_name}</span>
+                      <span className="block font-semibold text-ink group-hover:text-brand transition-colors">{partner?.partner_name}</span>
                       <span className="block text-[15px] text-ink-muted">{product?.product_name}</span>
                     </td>
-                    <td className="px-5 py-4 text-right font-bold tabular-nums text-navy">{progress.totalOrdered.toLocaleString('id-ID')}</td>
+                    <td className="px-5 py-4 text-right font-bold tabular-nums text-navy dark:text-[#8CCBFF]">{progress.totalOrdered.toLocaleString('id-ID')}</td>
                     <td className="px-5 py-4 text-[15px] tabular-nums">
                       <span className="block">
                         Dibuat <strong className="text-brand">{progress.totalProduced.toLocaleString('id-ID')}</strong>
@@ -244,7 +244,7 @@ export const OrderListScreen: React.FC<OrderListScreenProps> = ({
                     <span className="min-w-0">
                       <span className="block text-[17px] font-bold text-ink group-hover:text-brand transition-colors">{partner?.partner_name}</span>
                       <span className="block text-[15px] text-ink-muted">
-                        {product?.product_name} · <span className="font-mono text-navy font-semibold">{o.order_id}</span>
+                        {product?.product_name} · <span className="font-mono text-navy dark:text-[#8CCBFF] font-semibold">{o.order_id}</span>
                       </span>
                     </span>
                     <span className="w-8 h-8 rounded-lg bg-subtle text-ink-muted group-hover:bg-brand-soft group-hover:text-brand flex items-center justify-center shrink-0 transition-colors">
@@ -258,7 +258,7 @@ export const OrderListScreen: React.FC<OrderListScreenProps> = ({
                   <span className="mt-3 grid grid-cols-3 gap-2 text-[15px] p-2.5 rounded-lg bg-subtle border border-line/60">
                     <span>
                       <span className="block text-xs text-ink-muted">Dipesan</span>
-                      <strong className="tabular-nums text-navy">{progress.totalOrdered.toLocaleString('id-ID')}</strong>
+                      <strong className="tabular-nums text-navy dark:text-[#8CCBFF]">{progress.totalOrdered.toLocaleString('id-ID')}</strong>
                     </span>
                     <span>
                       <span className="block text-xs text-ink-muted">Dikirim</span>

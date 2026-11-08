@@ -27,7 +27,7 @@ export function StaffNotice({ actor, onRequireStaff }: { actor: string | null; o
             <UserRound className="w-4 h-4" aria-hidden />
           </span>
           <span>
-            Dicatat atas nama: <strong className="text-navy font-bold">{actor}</strong>
+            Dicatat atas nama: <strong className="text-navy dark:text-[#8CCBFF] font-bold">{actor}</strong>
           </span>
         </p>
         <Button
@@ -89,7 +89,7 @@ export function SavedReceipt({
               {title}
             </h1>
             <p className="mt-2 text-lg text-ink">
-              {idLabel}: <strong className="font-mono text-navy">{idValue}</strong>
+              {idLabel}: <strong className="font-mono text-navy dark:text-[#8CCBFF]">{idValue}</strong>
             </p>
             {duplicate && (
               <p className="mt-1 text-[15px] text-ink-muted">

@@ -106,7 +106,7 @@ export const AlertCenterScreen: React.FC<AlertCenterScreenProps> = ({ alerts, on
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <SeverityBadge severity={a.severity} />
-                    <span className="font-mono text-sm font-bold text-navy px-2 py-0.5 rounded bg-subtle border border-line">
+                    <span className="font-mono text-sm font-bold text-navy dark:text-[#8CCBFF] px-2 py-0.5 rounded bg-subtle border border-line">
                       {a.order_id}
                     </span>
                   </div>
@@ -120,7 +120,7 @@ export const AlertCenterScreen: React.FC<AlertCenterScreenProps> = ({ alerts, on
                   </p>
                   {SEVERITY[a.severity].next && (
                     <div className="mt-4 p-3 rounded-field bg-subtle border border-line text-[14px]">
-                      <strong className="text-navy font-semibold">Tindakan disarankan:</strong>{' '}
+                      <strong className="text-navy dark:text-[#8CCBFF] font-semibold">Tindakan disarankan:</strong>{' '}
                       <span className="text-ink">{SEVERITY[a.severity].next}</span>
                     </div>
                   )}

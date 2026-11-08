@@ -307,12 +307,12 @@ export default function Home() {
       <footer className="w-full bg-surface border-t border-line py-6 px-4 sm:px-6 lg:px-8 mt-12 shadow-xs">
         <div className="max-w-[1360px] mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 text-[15px] text-ink-muted">
           <div className="flex items-center gap-3">
-            <span className="w-8 h-8 rounded-lg bg-navy text-white flex items-center justify-center font-bold text-sm tracking-wider">
+            <span className="w-8 h-8 rounded-lg bg-navy dark:bg-[#263D5A] text-white dark:text-[#8CCBFF] border border-line/40 flex items-center justify-center font-bold text-sm tracking-wider shadow-xs">
               PHM
             </span>
             <div>
               <p className="font-semibold text-ink">
-                <strong className="text-navy font-bold">BEESHA</strong> — Sistem Informasi Operasional
+                <strong className="text-navy dark:text-[#8CCBFF] font-bold">BEESHA</strong> — Sistem Informasi Operasional
               </p>
               <p className="text-xs text-ink-muted">PT Putra Hatim Mandiri (PHM Group) · Prototipe Manufaktur</p>
             </div>
@@ -328,7 +328,7 @@ export default function Home() {
               variant="secondary"
               size="sm"
               onClick={() => navigate('inspeksi_3d')}
-              icon={<Box className="w-4 h-4 text-brand" />}
+              icon={<Box className="w-4 h-4 text-brand dark:text-[#8CCBFF]" />}
             >
               Viewer 3D Part
             </Button>
@@ -336,7 +336,7 @@ export default function Home() {
               variant="secondary"
               size="sm"
               onClick={() => setIsGuideOpen(true)}
-              icon={<BookOpen className="w-4 h-4 text-brand" />}
+              icon={<BookOpen className="w-4 h-4 text-brand dark:text-[#8CCBFF]" />}
             >
               Buku Panduan &amp; Tur Sistem
             </Button>

@@ -415,8 +415,8 @@ export const NewOrderForm: React.FC<NewOrderFormProps> = ({
           {/* Guidance Cards: always visible on desktop, conditionally on mobile */}
           <div className={`${mobileGuideOpen ? 'block' : 'hidden'} lg:block space-y-4 transition-all duration-200`}>
             <div className="bg-surface border border-brand/30 rounded-card shadow-card p-5 md:p-6 bg-gradient-to-b from-brand-soft/40 to-surface">
-              <h2 className="text-lg font-bold text-navy flex items-center gap-2">
-                <Info className="w-5 h-5 text-brand" /> Yang perlu disiapkan
+              <h2 className="text-lg font-bold text-navy dark:text-[#8CCBFF] flex items-center gap-2">
+                <Info className="w-5 h-5 text-brand dark:text-[#8CCBFF]" /> Yang perlu disiapkan
               </h2>
               <ul className="mt-3 space-y-2 text-base text-ink list-disc pl-5 leading-relaxed">
                 <li>Dokumen fisik PO dari mitra</li>
@@ -431,7 +431,7 @@ export const NewOrderForm: React.FC<NewOrderFormProps> = ({
             {product && (
               <div className="bg-surface border border-line rounded-card shadow-card p-5">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-ink-muted">Spesifikasi Komponen</h3>
-                <p className="mt-2 text-base font-bold text-navy">
+                <p className="mt-2 text-base font-bold text-navy dark:text-[#8CCBFF]">
                   {product.product_name} <span className="font-mono text-sm text-ink-muted">({product.product_code})</span>
                 </p>
                 <p className="mt-1 text-[15px] text-ink leading-relaxed">{product.specification}</p>

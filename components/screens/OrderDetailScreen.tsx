@@ -167,7 +167,7 @@ export const OrderDetailScreen: React.FC<OrderDetailScreenProps> = ({
           </dl>
           <div className="mt-5 pt-4 border-t border-line">
             <h3 className="text-base font-bold flex items-center gap-2">
-              <History className="w-5 h-5 text-navy" aria-hidden /> Asal data
+              <History className="w-5 h-5 text-navy dark:text-[#8CCBFF]" aria-hidden /> Asal data
             </h3>
             <dl className="mt-3 space-y-3">
               <KeyValue label="Dicatat oleh" value={order.created_by} />

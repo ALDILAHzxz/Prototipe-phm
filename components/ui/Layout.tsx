@@ -24,7 +24,7 @@ export function PageHeader({
           <button
             type="button"
             onClick={onBack}
-            className="mb-3 inline-flex items-center gap-2 px-3.5 py-1.5 min-h-[40px] rounded-field text-[15px] font-semibold bg-surface border border-line-field text-navy hover:bg-subtle hover:border-navy/40 shadow-xs transition-all active:scale-[0.985] cursor-pointer"
+            className="mb-3 inline-flex items-center gap-2 px-3.5 py-1.5 min-h-[40px] rounded-field text-[15px] font-semibold bg-surface border border-line text-navy dark:text-[#8CCBFF] hover:bg-subtle hover:border-brand/40 shadow-xs transition-all active:scale-[0.985] cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" aria-hidden />
             {backLabel}
@@ -204,8 +204,8 @@ export function FilterChips<T extends string>({
             onClick={() => onChange(o.id)}
             className={`min-h-[44px] px-4 rounded-field border text-[15px] font-semibold cursor-pointer transition-all duration-150 active:scale-[0.985] shadow-xs ${
               active
-                ? 'bg-navy text-white border-navy shadow-sm'
-                : 'bg-surface text-ink border-line-field hover:bg-subtle hover:border-navy/40'
+                ? 'bg-navy dark:bg-brand text-white dark:text-[#0B111B] border-navy dark:border-brand shadow-sm font-bold'
+                : 'bg-surface text-ink border-line hover:bg-subtle hover:border-brand/40'
             }`}
           >
             {o.label}
