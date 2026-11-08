@@ -77,3 +77,4 @@
 - Asisten AI Beesha (Gemini API & fallback offline lokal).
 - Inspeksi 3D part Three.js (orbit controls, exploded view, material switch).
 - Pengesahan data oleh supervisor dan koreksi catatan.
+

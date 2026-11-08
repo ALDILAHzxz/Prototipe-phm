@@ -96,3 +96,35 @@ export function hashToRoute(hash: string): Route {
   }
   return { screen: 'beranda' };
 }
+
+/**
+ * Judul kontekstual untuk navbar mobile (V4.0).
+ * Menggantikan blok branding BEESHA di mobile dengan nama rute aktif.
+ */
+export function getScreenTitle(screen: ScreenType): { full: string; short: string } {
+  switch (screen) {
+    case 'beranda':
+      return { full: 'Ringkasan Operasional', short: 'Ringkasan' };
+    case 'daftar_pesanan':
+      return { full: 'Pesanan Mitra', short: 'Pesanan' };
+    case 'form_pesanan':
+      return { full: 'Catat Pesanan', short: 'Catat Pesanan' };
+    case 'form_produksi':
+      return { full: 'Catat Produksi', short: 'Produksi' };
+    case 'form_pengiriman':
+      return { full: 'Catat Pengiriman', short: 'Pengiriman' };
+    case 'detail_pesanan':
+      return { full: 'Detail Pesanan', short: 'Detail' };
+    case 'riwayat_aktivitas':
+      return { full: 'Riwayat Aktivitas', short: 'Riwayat' };
+    case 'pemeriksaan_data':
+      return { full: 'Pemeriksaan Data', short: 'Pemeriksaan' };
+    case 'pusat_peringatan':
+      return { full: 'Peringatan', short: 'Peringatan' };
+    case 'inspeksi_3d':
+      return { full: 'Inspeksi 3D', short: 'Inspeksi 3D' };
+    default:
+      return { full: 'Ringkasan Operasional', short: 'Ringkasan' };
+  }
+}
+

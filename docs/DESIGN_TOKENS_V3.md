@@ -59,3 +59,4 @@ Dalam mode gelap, token disesuaikan secara khusus agar teks dan ikon tidak redup
 - Semua ikon fungsional SVG berukuran 20–24px berada di dalam kontainer berukuran 40–44px (atau 48px untuk aksi utama).
 - Menggunakan `currentColor` sehingga secara otomatis mewarisi warna semantik dari token teks terkait.
 - Dilarang keras menempatkan ikon hitam di atas latar belakang gelap.
+

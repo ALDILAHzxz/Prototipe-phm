@@ -11,7 +11,7 @@ interface NavigationDrawerProps {
   onNavigate: (screen: ScreenType) => void;
   badges: Partial<Record<ScreenType, number>>;
   activeStaff: Staff | null;
-  onOpenStaffPicker: () => void;
+  onOpenProfile: () => void;
   onOpenAssistant: () => void;
   onOpenGuide: () => void;
   onResetData: () => void;
@@ -25,7 +25,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onNavigate,
   badges,
   activeStaff,
-  onOpenStaffPicker,
+  onOpenProfile,
   onOpenAssistant,
   onOpenGuide,
   onResetData,
@@ -123,15 +123,19 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           type="button"
           onClick={() => {
             onClose();
-            onOpenStaffPicker();
+            onOpenProfile();
           }}
-          className="px-4 py-3 bg-subtle border-b border-line text-left hover:bg-canvas cursor-pointer"
+          className="px-4 py-3 bg-subtle border-b border-line text-left hover:bg-canvas cursor-pointer flex items-center justify-between group"
         >
-          <span className="block text-sm text-ink-muted">Petugas yang mencatat</span>
-          <span className="block text-base font-semibold text-ink">
-            {activeStaff ? `${activeStaff.name} — ${activeStaff.role_label}` : 'Belum dipilih'}
-          </span>
-          <span className="block text-sm font-semibold text-brand mt-0.5">Ganti petugas</span>
+          <div>
+            <span className="block text-xs font-bold uppercase tracking-wider text-ink-muted">Profil &amp; Petugas Kerja</span>
+            <span className="block text-base font-bold text-ink mt-0.5">
+              {activeStaff ? `${activeStaff.name} — ${activeStaff.role_label}` : 'Belum Memilih Petugas'}
+            </span>
+            <span className="block text-xs font-bold text-brand dark:text-[#8CCBFF] mt-1 group-hover:underline">
+              Buka Profil &amp; Ganti Petugas →
+            </span>
+          </div>
         </button>
 
         <nav aria-label="Menu utama" className="flex-1 overflow-y-auto px-3 py-4 space-y-5">

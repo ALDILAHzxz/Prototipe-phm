@@ -289,10 +289,10 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({
           </div>
         </div>
 
-        {/* Desktop View: Full-Width 4-Col Row + Centered 3-Col Row (Screenshot 3 Refinement) */}
+        {/* Desktop View: Full-Width 4-Col Row + Centered 3-Col Row (Centered Headings) */}
         <div className="hidden md:block space-y-4">
           <div>
-            <span className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-2.5">
+            <span className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-2.5 text-center">
               Status Pemeriksaan
             </span>
             <div className="grid grid-cols-4 gap-3 w-full">

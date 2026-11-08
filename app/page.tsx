@@ -15,8 +15,9 @@ import { AlertCenterScreen } from '@/components/screens/AlertCenterScreen';
 import { VerificationScreen } from '@/components/screens/VerificationScreen';
 import { ThreePartViewer } from '@/components/ThreePartViewer';
 import { BeeshaAIAssistant } from '@/components/BeeshaAIAssistant';
+import { BeeshaFloatingFAB } from '@/components/BeeshaFloatingFAB';
 import { DesignSystemReference } from '@/components/DesignSystemReference';
-import { StaffPicker } from '@/components/StaffPicker';
+import { UserProfileModal } from '@/components/UserProfileModal';
 import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Notice, PageHeader } from '@/components/ui/Layout';
@@ -46,7 +47,7 @@ export default function Home() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [isStaffPickerOpen, setIsStaffPickerOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<Route | null>(null);
 
@@ -122,7 +123,7 @@ export default function Home() {
     repo: ops.repo,
     apply: ops.apply,
     actor: ops.activeStaff ? staffDisplayName(ops.activeStaff) : null,
-    onRequireStaff: () => setIsStaffPickerOpen(true),
+    onRequireStaff: () => setIsProfileOpen(true),
     onDirtyChange,
     storageKind: ops.storageKind,
   };
@@ -279,7 +280,7 @@ export default function Home() {
       <Navbar
         onOpenDrawer={() => setIsDrawerOpen(true)}
         onOpenAssistant={() => setIsAssistantOpen(true)}
-        onOpenStaffPicker={() => setIsStaffPickerOpen(true)}
+        onOpenProfile={() => setIsProfileOpen(true)}
         onNavigate={(s) => navigate(s)}
         currentScreen={route.screen}
         activeStaff={ops.activeStaff}
@@ -293,7 +294,7 @@ export default function Home() {
         onNavigate={(s) => navigate(s)}
         badges={badges}
         activeStaff={ops.activeStaff}
-        onOpenStaffPicker={() => setIsStaffPickerOpen(true)}
+        onOpenProfile={() => setIsProfileOpen(true)}
         onOpenAssistant={() => setIsAssistantOpen(true)}
         onOpenGuide={() => setIsGuideOpen(true)}
         onResetData={() => setIsResetOpen(true)}
@@ -303,6 +304,12 @@ export default function Home() {
       <main id="konten-utama" className="flex-1 w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {renderScreen()}
       </main>
+
+      {/* Persistent Floating Beesha AI Button di Seluruh Rute Mobile (V4.0) */}
+      <BeeshaFloatingFAB
+        onOpen={() => setIsAssistantOpen(true)}
+        isOpen={isAssistantOpen}
+      />
 
       <footer className="w-full bg-surface border-t border-line py-6 px-4 sm:px-6 lg:px-8 mt-12 shadow-xs">
         <div className="max-w-[1360px] mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 text-[15px] text-ink-muted">
@@ -320,7 +327,7 @@ export default function Home() {
 
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-subtle border border-line text-xs font-medium text-ink-muted">
             <span className="w-2 h-2 rounded-full bg-warning animate-pulse" aria-hidden />
-            <span>Data Simulasi Lokal · Penyimpanan Perangkat (localStorage) · Belum Terhubung INDIGO</span>
+            <span>Data Contoh Lokal · Penyimpanan Perangkat (localStorage) · Belum Terhubung INDIGO</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
@@ -360,12 +367,12 @@ export default function Home() {
         onNavigate={navigate}
       />
 
-      <StaffPicker
-        open={isStaffPickerOpen}
-        staff={DEMO_STAFF}
-        active={ops.activeStaff}
-        onSelect={ops.setActiveStaff}
-        onClose={() => setIsStaffPickerOpen(false)}
+      <UserProfileModal
+        open={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        activeStaff={ops.activeStaff}
+        allStaff={DEMO_STAFF}
+        onSelectStaff={ops.setActiveStaff}
       />
 
       <Dialog

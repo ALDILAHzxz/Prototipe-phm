@@ -102,13 +102,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     <div className="space-y-8">
       <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div>
             <h1 className="text-[28px] md:text-[32px] font-bold text-ink leading-tight">
-              Ringkasan Operasional
+              <span className="md:hidden">Beesha</span>
+              <span className="hidden md:inline">Ringkasan Operasional</span>
             </h1>
-            <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-brand-soft text-brand border border-brand/20">
-              Data Simulasi
-            </span>
           </div>
           <p className="mt-1 text-base md:text-lg text-ink-muted">
             Pantau pesanan, produksi, dan pengiriman dalam satu tempat.{activeStaff ? ` Halo, ${activeStaff.name}.` : ''}
@@ -447,39 +445,39 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 action={<Button onClick={() => onNavigate('form_pesanan')}>Catat Pesanan Baru</Button>}
               />
             ) : (
-              <ul className="divide-y divide-line -my-4">
+              <ul className="space-y-3">
                 {active.slice(0, 5).map(({ o, p, partner, product }) => (
-                  <li key={o.order_id} className="py-4">
+                  <li key={o.order_id}>
                     <button
                       type="button"
                       onClick={() => onSelectOrderForDetail(o.order_id)}
-                      className="w-full text-left rounded-field cursor-pointer group p-2 -m-2 hover:bg-subtle transition-colors"
+                      className="interactive-card w-full text-left rounded-xl cursor-pointer group p-3.5 sm:p-4 bg-surface hover:bg-subtle border border-line/60 transition-all block"
                     >
                       <span className="flex flex-wrap items-start justify-between gap-2">
-                        <span className="min-w-0">
-                          <span className="block text-[17px] font-bold text-ink group-hover:text-brand transition-colors">
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[16px] sm:text-[17px] font-bold text-ink group-hover:text-brand transition-colors break-words">
                             {partner?.partner_name}
                           </span>
-                          <span className="block text-[15px] text-ink-muted">
-                            {product?.product_name} · <span className="font-mono">{o.order_id}</span> · tenggat {formatDate(o.due_date)}
+                          <span className="block text-[13.5px] sm:text-[14.5px] text-ink-muted mt-0.5 break-words">
+                            {product?.product_name} · <span className="font-mono text-navy dark:text-[#8CCBFF] font-bold">{o.order_id}</span> · tenggat {formatDate(o.due_date)}
                           </span>
                         </span>
                         <OrderStatusBadge status={p.computedStatus} />
                       </span>
                       <span className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <span>
-                          <span className="flex justify-between text-[15px] mb-1">
-                            <span>Diproduksi</span>
-                            <span className="tabular-nums font-semibold">
+                          <span className="flex justify-between text-xs sm:text-[13px] mb-1">
+                            <span className="text-ink-muted">Diproduksi</span>
+                            <span className="tabular-nums font-semibold text-brand">
                               {p.totalProduced.toLocaleString('id-ID')} / {p.totalOrdered.toLocaleString('id-ID')}
                             </span>
                           </span>
                           <ProgressBar value={p.productionPercentage} label={`Produksi ${o.order_id}`} />
                         </span>
                         <span>
-                          <span className="flex justify-between text-[15px] mb-1">
-                            <span>Dikirim</span>
-                            <span className="tabular-nums font-semibold">
+                          <span className="flex justify-between text-xs sm:text-[13px] mb-1">
+                            <span className="text-ink-muted">Dikirim</span>
+                            <span className="tabular-nums font-semibold text-success">
                               {p.totalShipped.toLocaleString('id-ID')} / {p.totalOrdered.toLocaleString('id-ID')}
                             </span>
                           </span>

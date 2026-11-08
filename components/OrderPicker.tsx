@@ -108,10 +108,10 @@ export function OrderPicker({
           return (
             <label
               key={o.order_id}
-              className={`interactive-card flex gap-3 p-4 rounded-card border-2 cursor-pointer transition-all shadow-xs ${
+              className={`interactive-card flex gap-3.5 p-4.5 sm:p-5 rounded-card border-2 cursor-pointer transition-all shadow-xs ${
                 checked
                   ? 'border-brand bg-brand-soft/70 shadow-sm'
-                  : 'border-line hover:border-line-blue hover:shadow-card bg-surface'
+                  : 'border-line hover:border-brand/50 hover:shadow-card bg-surface'
               }`}
             >
               <input
@@ -120,14 +120,14 @@ export function OrderPicker({
                 value={o.order_id}
                 checked={checked}
                 onChange={() => onChange(o.order_id)}
-                className="mt-1 w-5 h-5 accent-[rgb(var(--c-brand))] shrink-0"
+                className="mt-1 w-5 h-5 accent-[rgb(var(--c-brand))] shrink-0 cursor-pointer"
               />
               <span className="flex-1 min-w-0">
                 <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                  <span className="text-[17px] font-bold text-ink">{partner?.partner_name ?? 'Mitra tidak dikenal'}</span>
-                  <span className="text-sm text-ink-muted">Tenggat {formatDate(o.due_date)}</span>
+                  <span className="text-[17px] font-bold text-ink break-words">{partner?.partner_name ?? 'Mitra tidak dikenal'}</span>
+                  <span className="text-xs sm:text-sm text-ink-muted shrink-0">Tenggat {formatDate(o.due_date)}</span>
                 </span>
-                <span className="block text-base text-ink mt-0.5">
+                <span className="block text-base text-ink mt-0.5 break-words">
                   {product?.product_name ?? 'Barang'}{' '}
                   <span className="text-ink-muted">· PO {o.po_number}</span>
                 </span>

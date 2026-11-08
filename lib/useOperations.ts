@@ -23,7 +23,7 @@ export interface OperationsState {
   apply: <T>(result: SaveResult<T>) => SaveResult<T>;
   reset: () => Promise<void>;
   activeStaff: Staff | null;
-  setActiveStaff: (s: Staff) => void;
+  setActiveStaff: (s: Staff | null) => void;
 }
 
 /** Memuat data dari repository dan menyediakannya ke seluruh layar. */
@@ -66,10 +66,14 @@ export function useOperations(): OperationsState {
     setSnapshot(await repo.resetToSampleData());
   }, [repo]);
 
-  const setActiveStaff = useCallback((s: Staff) => {
+  const setActiveStaff = useCallback((s: Staff | null) => {
     setActiveStaffState(s);
     try {
-      window.localStorage.setItem(STAFF_KEY, s.staff_id);
+      if (s) {
+        window.localStorage.setItem(STAFF_KEY, s.staff_id);
+      } else {
+        window.localStorage.removeItem(STAFF_KEY);
+      }
     } catch {
       /* abaikan */
     }

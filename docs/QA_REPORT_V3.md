@@ -99,3 +99,4 @@
 | **FILTER-09** | Ubah Filter di Mobile | Seleksi dan daftar data ter-update secara instan | ✅ PASS |
 | **FILTER-10** | Rotasi ke Desktop | Status filter yang dipilih di mobile tetap aktif di desktop | ✅ PASS |
 | **REG-01 s/d REG-05** | Alur Bisnis Lengkap | Input PO, Produksi, Pengiriman, AI, dan 3D Viewer berfungsi normal | ✅ PASS |
+

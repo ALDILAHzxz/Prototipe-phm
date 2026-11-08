@@ -60,3 +60,4 @@ Dokumen ini memetakan perubahan konkret antarmuka berdasarkan 4 tangkapan layar 
 - **Bottom-Sheet Modal:** Mengetuk salah satu selektor akan membuka jendela bawah (*bottom-sheet*) yang nyaman dioperasikan satu tangan, menampilkan pilihan lengkap beserta tombol centang dan angka hitungannya.
 - **Ringkasan Bersih:** Di bawah kedua selektor, terdapat teks ringkasan *"Menampilkan X catatan"* dan tautan cepat *"Reset Filter"* jika pengguna ingin kembali ke tampilan semua data.
 - **Tidak Ada Kehilangan Fitur:** Seluruh kombinasi penyaringan data (misalnya: *Status = Menunggu* dan *Jenis = Pengiriman*) tetap bekerja 100% akurat.
+
